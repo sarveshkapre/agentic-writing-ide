@@ -28,6 +28,7 @@ export type AppState = {
   document: DocumentModel;
   selectedRevisionId: string;
   compareRevisionId: string | null;
+  workingContent: string;
   settings: Settings;
 };
 

@@ -1,5 +1,7 @@
 # Plan — Agentic Writing IDE
 
+Canonical snapshot: see `/PLAN.md`.
+
 ## Goal
 Build a local-first, document‑centric writing IDE that walks a draft through multi‑agent stages (draft → critique → revise → polish) with branchable history, diffs, and rationales. Runs fully offline by default, with optional LLM integration later.
 
@@ -54,6 +56,7 @@ Data model (MVP)
 
 ## Risks & mitigations
 - History complexity: keep model minimal; avoid merge in MVP.
+- Revision integrity: keep historical revisions immutable; edit via a working copy.
 - Diff performance: only diff selected revisions.
 - UX overload: progressive disclosure, clean layout.
 
@@ -61,4 +64,3 @@ Data model (MVP)
 - Local-only by default.
 - No telemetry.
 - Input sanitization for any HTML rendering in preview.
-

@@ -1,12 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { runLlmStage } from "./agents/llmAdapter";
 import { stages } from "./agents/pipeline";
 import { DiffView } from "./lib/diff";
+import { wrapHtml } from "./lib/exportDoc";
 import { createId } from "./lib/id";
 import { renderMarkdown } from "./lib/markdown";
+import { printHtml } from "./lib/print";
 import { exportState, importState, saveState } from "./state/persistence";
-import { useStore } from "./state/store";
+import { useStore } from "./state/useStore";
 import type { Revision, StageId } from "./state/types";
+import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Editor } from "./ui/Editor";
 import { HistoryPanel } from "./ui/HistoryPanel";
 import { MarkdownPreview } from "./ui/MarkdownPreview";
@@ -29,22 +32,6 @@ const downloadFile = (name: string, content: string, type: string) => {
   URL.revokeObjectURL(url);
 };
 
-const wrapHtml = (title: string, body: string) => `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>${title}</title>
-  <style>
-    body { font-family: "Space Grotesk", sans-serif; margin: 2rem; line-height: 1.6; }
-    h1, h2, h3 { font-family: "Fraunces", serif; }
-    blockquote { padding: 0.5rem 1rem; background: #f3efe6; border-left: 4px solid #0c6b68; }
-  </style>
-</head>
-<body>
-${body}
-</body>
-</html>`;
-
 export const App: React.FC = () => {
   const { state, dispatch } = useStore();
   const [saveStatus, setSaveStatus] = useState("Idle");
@@ -52,9 +39,18 @@ export const App: React.FC = () => {
   const [mergeSourceId, setMergeSourceId] = useState("");
   const [diffMode, setDiffMode] = useState<"inline" | "side">("inline");
   const [llmStatus, setLlmStatus] = useState("Not tested");
+  const [pendingNav, setPendingNav] = useState<
+    | { kind: "select-revision"; revisionId: string }
+    | { kind: "switch-branch"; branchId: string }
+    | null
+  >(null);
 
   const doc = state.document;
   const selectedRevision = doc.revisions[state.selectedRevisionId];
+  const workingContent = state.workingContent;
+  const isDirty = workingContent !== selectedRevision.content;
+  const llmEnabled = state.settings.llm.enabled;
+  const llmModel = state.settings.llm.model;
   const currentBranch = doc.branches[doc.currentBranchId];
   const compareRevision = state.compareRevisionId
     ? doc.revisions[state.compareRevisionId]
@@ -78,77 +74,128 @@ export const App: React.FC = () => {
     [branchOptions, currentBranch.id]
   );
 
-  const handleRunStage = async (stageId: StageId) => {
-    const stage = stages.find((item) => item.id === stageId);
-    if (!stage) return;
-
-    if (state.settings.llm.enabled) {
-      const result = await runLlmStage({
-        stage: stageId,
-        input: selectedRevision.content,
-        model: state.settings.llm.model
-      });
+  const commitWorkingCopy = useCallback(
+    (rationale: string) => {
+      if (!isDirty) return null;
       const revision: Revision = {
         id: createId(),
         parentId: selectedRevision.id,
         createdAt: nowIso(),
+        author: "user",
+        content: workingContent,
+        rationale,
+        stage: selectedRevision.stage
+      };
+      dispatch({ type: "ADD_REVISION", revision });
+      return revision.id;
+    },
+    [dispatch, isDirty, selectedRevision.id, selectedRevision.stage, workingContent]
+  );
+
+  const handleRunStage = useCallback(
+    async (stageId: StageId) => {
+      const stage = stages.find((item) => item.id === stageId);
+      if (!stage) return;
+
+      let parentId = selectedRevision.id;
+      let input = workingContent;
+
+      if (isDirty) {
+        const committedId = commitWorkingCopy(`Auto-commit before ${stage.label}`);
+        parentId = committedId ?? parentId;
+        input = workingContent;
+      }
+
+      if (llmEnabled) {
+        const result = await runLlmStage({
+          stage: stageId,
+          input,
+          model: llmModel
+        });
+        const revision: Revision = {
+          id: createId(),
+          parentId,
+          createdAt: nowIso(),
+          author: "agent",
+          content: result.output,
+          rationale: result.rationale,
+          stage: stageId
+        };
+        dispatch({ type: "ADD_REVISION", revision });
+        return;
+      }
+
+      const { output, rationale } = stage.run(input);
+      const revision: Revision = {
+        id: createId(),
+        parentId,
+        createdAt: nowIso(),
         author: "agent",
-        content: result.output,
-        rationale: result.rationale,
+        content: output,
+        rationale: rationale,
         stage: stageId
       };
       dispatch({ type: "ADD_REVISION", revision });
-      return;
-    }
+    },
+    [
+      commitWorkingCopy,
+      dispatch,
+      isDirty,
+      llmEnabled,
+      llmModel,
+      selectedRevision.id,
+      workingContent
+    ]
+  );
 
-    const { output, rationale } = stage.run(selectedRevision.content);
-    const revision: Revision = {
-      id: createId(),
-      parentId: selectedRevision.id,
-      createdAt: nowIso(),
-      author: "agent",
-      content: output,
-      rationale: rationale,
-      stage: stageId
-    };
-    dispatch({ type: "ADD_REVISION", revision });
-  };
+  const handleCommitDraft = useCallback(() => {
+    commitWorkingCopy("Manual edit commit");
+  }, [commitWorkingCopy]);
 
-  const handleCommitDraft = () => {
-    const revision: Revision = {
-      id: createId(),
-      parentId: selectedRevision.id,
-      createdAt: nowIso(),
-      author: "user",
-      content: selectedRevision.content,
-      rationale: "Manual edit commit",
-      stage: selectedRevision.stage
-    };
-    dispatch({ type: "ADD_REVISION", revision });
-  };
+  const handleDiscardChanges = useCallback(() => {
+    if (!isDirty) return;
+    dispatch({ type: "UPDATE_CONTENT", content: selectedRevision.content });
+  }, [dispatch, isDirty, selectedRevision.content]);
 
   const handleCreateBranch = () => {
     const trimmed = branchName.trim();
     if (!trimmed) return;
+    const fromRevisionId =
+      commitWorkingCopy("Auto-commit before branch") ?? selectedRevision.id;
     dispatch({
       type: "CREATE_BRANCH",
       name: trimmed,
-      fromRevisionId: selectedRevision.id
+      fromRevisionId
     });
     setBranchName("");
   };
 
-  const handleSwitchBranch = (branchId: string) => {
-    dispatch({ type: "SWITCH_BRANCH", branchId });
-  };
+  const handleSwitchBranch = useCallback(
+    (branchId: string) => {
+      if (isDirty) {
+        setPendingNav({ kind: "switch-branch", branchId });
+        return;
+      }
+      dispatch({ type: "SWITCH_BRANCH", branchId });
+    },
+    [dispatch, isDirty]
+  );
 
   const handleMergeBranch = () => {
     const source = mergeOptions.find((branch) => branch.id === mergeSourceId);
     if (!source) return;
+
+    let mergeParentId = currentBranch.headRevisionId;
+
+    if (isDirty) {
+      mergeParentId =
+        commitWorkingCopy("Auto-commit before merge") ?? mergeParentId;
+    }
+
     const sourceHead = doc.revisions[source.headRevisionId];
     const revision: Revision = {
       id: createId(),
-      parentId: currentBranch.headRevisionId,
+      parentId: mergeParentId,
       createdAt: nowIso(),
       author: "user",
       content: sourceHead.content,
@@ -158,27 +205,22 @@ export const App: React.FC = () => {
     dispatch({ type: "ADD_REVISION", revision });
   };
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     const data = exportState(state);
     downloadFile("agentic-writing-ide.json", data, "application/json");
-  };
+  }, [state]);
 
-  const handleExportHtml = () => {
-    const html = renderMarkdown(selectedRevision.content);
+  const handleExportHtml = useCallback(() => {
+    const html = renderMarkdown(workingContent);
     const docHtml = wrapHtml(doc.title, html);
     downloadFile("agentic-draft.html", docHtml, "text/html");
-  };
+  }, [doc.title, workingContent]);
 
-  const handleExportPdf = () => {
-    const html = renderMarkdown(selectedRevision.content);
+  const handleExportPdf = useCallback(() => {
+    const html = renderMarkdown(workingContent);
     const docHtml = wrapHtml(doc.title, html);
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.write(docHtml);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-  };
+    printHtml(docHtml);
+  }, [doc.title, workingContent]);
 
   const handleImport = (file: File | null) => {
     if (!file) return;
@@ -188,11 +230,44 @@ export const App: React.FC = () => {
     });
   };
 
+  const requestSelectRevision = useCallback(
+    (revisionId: string) => {
+      if (isDirty) {
+        setPendingNav({ kind: "select-revision", revisionId });
+        return;
+      }
+      dispatch({ type: "SELECT_REVISION", revisionId });
+    },
+    [dispatch, isDirty]
+  );
+
+  const handleResolvePendingNav = useCallback(
+    (mode: "commit" | "discard") => {
+      const next = pendingNav;
+      if (!next) return;
+
+      if (mode === "commit") {
+        commitWorkingCopy("Auto-commit before navigation");
+      } else {
+        dispatch({ type: "UPDATE_CONTENT", content: selectedRevision.content });
+      }
+
+      if (next.kind === "select-revision") {
+        dispatch({ type: "SELECT_REVISION", revisionId: next.revisionId });
+      } else {
+        dispatch({ type: "SWITCH_BRANCH", branchId: next.branchId });
+      }
+
+      setPendingNav(null);
+    },
+    [commitWorkingCopy, dispatch, pendingNav, selectedRevision.content]
+  );
+
   const handleTestStub = async () => {
     setLlmStatus("Testing...");
     const result = await runLlmStage({
       stage: "draft",
-      input: selectedRevision.content,
+      input: workingContent,
       model: state.settings.llm.model
     });
     setLlmStatus(`Stub ready: ${result.rationale}`);
@@ -263,7 +338,7 @@ export const App: React.FC = () => {
             Export HTML
           </button>
           <button className="ghost" type="button" onClick={handleExportPdf}>
-            Export PDF
+            Print / PDF
           </button>
           <label className="ghost file">
             Import JSON
@@ -292,6 +367,12 @@ export const App: React.FC = () => {
               <p className="muted">
                 Stage: {stageLabel(selectedRevision.stage)} · Author:{" "}
                 {selectedRevision.author}
+                {isDirty ? (
+                  <>
+                    {" "}
+                    · <span className="tag dirty">Uncommitted</span>
+                  </>
+                ) : null}
               </p>
             </div>
             <div className="branch-controls">
@@ -341,22 +422,33 @@ export const App: React.FC = () => {
             <div className="panel">
               <h3>Draft</h3>
               <Editor
-                value={selectedRevision.content}
+                value={workingContent}
                 onChange={(value) =>
                   dispatch({ type: "UPDATE_CONTENT", content: value })
                 }
               />
-              <button
-                className="primary"
-                type="button"
-                onClick={handleCommitDraft}
-              >
-                Commit manual edit
-              </button>
+              <div className="editor-actions">
+                <button
+                  className="primary"
+                  type="button"
+                  onClick={handleCommitDraft}
+                  disabled={!isDirty}
+                >
+                  Commit changes
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={handleDiscardChanges}
+                  disabled={!isDirty}
+                >
+                  Discard
+                </button>
+              </div>
             </div>
             <div className="panel">
               <h3>Preview</h3>
-              <MarkdownPreview markdown={selectedRevision.content} />
+              <MarkdownPreview markdown={workingContent} />
             </div>
           </div>
 
@@ -366,7 +458,10 @@ export const App: React.FC = () => {
                 <div>
                   <h3>Diff</h3>
                   <p className="muted">
-                    Comparing {compareRevision.stage} → {selectedRevision.stage}
+                    Comparing {compareRevision.stage} →{" "}
+                    {isDirty
+                      ? `working copy (${selectedRevision.stage})`
+                      : selectedRevision.stage}
                   </p>
                 </div>
                 <div className="diff-controls">
@@ -395,7 +490,7 @@ export const App: React.FC = () => {
               </div>
               <DiffView
                 before={compareRevision.content}
-                after={selectedRevision.content}
+                after={workingContent}
                 mode={diffMode}
               />
             </div>
@@ -414,7 +509,7 @@ export const App: React.FC = () => {
             selectedId={selectedRevision.id}
             compareId={state.compareRevisionId}
             stages={stages.map((stage) => stage.id)}
-            onSelect={(id) => dispatch({ type: "SELECT_REVISION", revisionId: id })}
+            onSelect={requestSelectRevision}
             onCompare={(id) => dispatch({ type: "COMPARE_REVISION", revisionId: id })}
           />
           <SettingsPanel
@@ -431,10 +526,37 @@ export const App: React.FC = () => {
             <p className="muted">Cmd/Ctrl + S: commit edit</p>
             <p className="muted">Cmd/Ctrl + Shift + E: export JSON</p>
             <p className="muted">Cmd/Ctrl + Shift + H: export HTML</p>
-            <p className="muted">Cmd/Ctrl + Shift + P: export PDF</p>
+            <p className="muted">Cmd/Ctrl + Shift + P: print/PDF</p>
           </div>
         </aside>
       </main>
+
+      {pendingNav ? (
+        <ConfirmDialog
+          title="You have uncommitted changes"
+          description="Commit your edits, discard them, or cancel to keep editing."
+          onClose={() => setPendingNav(null)}
+          actions={[
+            {
+              id: "commit",
+              label: "Commit & continue",
+              onSelect: () => handleResolvePendingNav("commit")
+            },
+            {
+              id: "discard",
+              label: "Discard & continue",
+              variant: "ghost",
+              onSelect: () => handleResolvePendingNav("discard")
+            },
+            {
+              id: "cancel",
+              label: "Cancel",
+              variant: "ghost",
+              onSelect: () => setPendingNav(null)
+            }
+          ]}
+        />
+      ) : null}
     </div>
   );
 };

@@ -26,7 +26,7 @@ npm run check
 - Cmd/Ctrl + S: commit edit
 - Cmd/Ctrl + Shift + E: export JSON
 - Cmd/Ctrl + Shift + H: export HTML
-- Cmd/Ctrl + Shift + P: export PDF
+- Cmd/Ctrl + Shift + P: print/PDF
 
 ## Docker
 ```bash

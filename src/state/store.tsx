@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useReducer } from "react";
+import React, { createContext, useMemo, useReducer } from "react";
 import { createId } from "../lib/id";
 import type {
   AppState,
@@ -11,6 +11,7 @@ import type {
 import { loadState } from "./persistence";
 
 const nowIso = () => new Date().toISOString();
+const STAGE_ORDER: StageId[] = ["draft", "critique", "revise", "polish"];
 
 const createInitialState = (): AppState => {
   const baseRevision: Revision = {
@@ -41,6 +42,7 @@ const createInitialState = (): AppState => {
     document,
     selectedRevisionId: baseRevision.id,
     compareRevisionId: null,
+    workingContent: baseRevision.content,
     settings: {
       llm: {
         enabled: false,
@@ -62,8 +64,21 @@ const normalizeState = (state: AppState): AppState => {
     }
   };
 
+  const selected =
+    state.document?.revisions?.[state.selectedRevisionId] ??
+    state.document?.revisions?.[
+      state.document?.branches?.[state.document?.currentBranchId]?.headRevisionId ??
+        ""
+    ];
+
+  const workingContent =
+    typeof state.workingContent === "string"
+      ? state.workingContent
+      : selected?.content ?? "";
+
   return {
     ...state,
+    workingContent,
     settings
   };
 };
@@ -82,21 +97,9 @@ export type Action =
 const reducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
     case "UPDATE_CONTENT": {
-      const revision = state.document.revisions[state.selectedRevisionId];
-      const updated: Revision = {
-        ...revision,
-        content: action.content,
-        createdAt: nowIso()
-      };
       return {
         ...state,
-        document: {
-          ...state.document,
-          revisions: {
-            ...state.document.revisions,
-            [revision.id]: updated
-          }
-        }
+        workingContent: action.content
       };
     }
     case "UPDATE_TITLE": {
@@ -125,11 +128,17 @@ const reducer = (state: AppState, action: Action): AppState => {
             [updatedBranch.id]: updatedBranch
           }
         },
-        selectedRevisionId: revision.id
+        selectedRevisionId: revision.id,
+        workingContent: revision.content
       };
     }
     case "SELECT_REVISION":
-      return { ...state, selectedRevisionId: action.revisionId };
+      return {
+        ...state,
+        selectedRevisionId: action.revisionId,
+        workingContent:
+          state.document.revisions[action.revisionId]?.content ?? state.workingContent
+      };
     case "COMPARE_REVISION":
       return { ...state, compareRevisionId: action.revisionId };
     case "CREATE_BRANCH": {
@@ -157,7 +166,9 @@ const reducer = (state: AppState, action: Action): AppState => {
           ...state.document,
           currentBranchId: branch.id
         },
-        selectedRevisionId: branch.headRevisionId
+        selectedRevisionId: branch.headRevisionId,
+        workingContent:
+          state.document.revisions[branch.headRevisionId]?.content ?? state.workingContent
       };
     }
     case "RESET":
@@ -181,7 +192,7 @@ type Store = {
   stageOrder: StageId[];
 };
 
-const StoreContext = createContext<Store | null>(null);
+export const StoreContext = createContext<Store | null>(null);
 
 export const StoreProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const stored = loadState();
@@ -189,15 +200,9 @@ export const StoreProvider: React.FC<React.PropsWithChildren> = ({ children }) =
     reducer,
     stored ? normalizeState(stored) : createInitialState()
   );
-  const stageOrder: StageId[] = ["draft", "critique", "revise", "polish"];
-  const value = useMemo(() => ({ state, dispatch, stageOrder }), [state]);
+  const value = useMemo(
+    () => ({ state, dispatch, stageOrder: STAGE_ORDER }),
+    [state, dispatch]
+  );
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
-};
-
-export const useStore = (): Store => {
-  const context = useContext(StoreContext);
-  if (!context) {
-    throw new Error("StoreProvider missing");
-  }
-  return context;
 };

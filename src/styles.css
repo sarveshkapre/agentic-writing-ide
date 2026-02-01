@@ -189,7 +189,20 @@ label.ghost.file input {
 button.primary {
   background: var(--amber);
   color: #3a2a14;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   margin-top: 0.8rem;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .panel {
@@ -250,6 +263,39 @@ button.primary {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 26, 31, 0.5);
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  z-index: 50;
+  backdrop-filter: blur(10px);
+}
+
+.modal {
+  width: min(520px, 100%);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.2rem;
+  box-shadow: 0 20px 60px rgba(11, 26, 31, 0.22);
+}
+
+.modal h3 {
+  margin-top: 0;
+  font-family: "Fraunces", serif;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 1rem;
 }
 
 .pipeline-item,
@@ -322,6 +368,11 @@ button.primary {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+.tag.dirty {
+  background: rgba(247, 178, 103, 0.25);
+  color: #7a4b16;
 }
 
 .time {
@@ -471,8 +522,16 @@ button.primary {
     color: var(--ink);
   }
 
+  .modal {
+    background: rgba(30, 36, 39, 0.92);
+  }
+
   button.ghost,
   label.ghost {
     color: var(--ink);
+  }
+
+  .tag.dirty {
+    color: #fbe0c2;
   }
 }
