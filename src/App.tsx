@@ -511,6 +511,9 @@ export const App: React.FC = () => {
             stages={stages.map((stage) => stage.id)}
             onSelect={requestSelectRevision}
             onCompare={(id) => dispatch({ type: "COMPARE_REVISION", revisionId: id })}
+            onTogglePin={(id) =>
+              dispatch({ type: "TOGGLE_REVISION_PIN", revisionId: id })
+            }
           />
           <SettingsPanel
             settings={state.settings.llm}

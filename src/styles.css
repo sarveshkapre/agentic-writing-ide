@@ -315,6 +315,13 @@ button:disabled {
   gap: 0.5rem;
 }
 
+.history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: start;
+}
+
 .history-select {
   background: transparent;
   color: inherit;
@@ -322,6 +329,27 @@ button:disabled {
   border-radius: 0;
   box-shadow: none;
   text-align: left;
+}
+
+.pin-button {
+  border-radius: 999px;
+  padding: 0.35rem 0.55rem;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  line-height: 1;
+}
+
+.pin-button.active {
+  color: var(--teal);
+  border-color: rgba(12, 107, 104, 0.35);
+  background: rgba(12, 107, 104, 0.08);
+}
+
+.pin-button:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .pipeline-item.active,
@@ -348,6 +376,29 @@ button:disabled {
   margin-bottom: 0.6rem;
 }
 
+.history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.history-actions .ghost {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+.history-section {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.history-divider {
+  height: 1px;
+  background: var(--border);
+  opacity: 0.9;
+}
+
 .history-filters input,
 .history-filters select {
   padding: 0.5rem 0.7rem;
@@ -368,6 +419,12 @@ button:disabled {
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+.tag.pinned {
+  background: rgba(34, 52, 59, 0.1);
+  color: var(--ink-soft);
+  margin-left: 0.4rem;
 }
 
 .tag.dirty {

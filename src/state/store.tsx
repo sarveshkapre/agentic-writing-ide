@@ -89,6 +89,7 @@ export type Action =
   | { type: "ADD_REVISION"; revision: Revision }
   | { type: "SELECT_REVISION"; revisionId: string }
   | { type: "COMPARE_REVISION"; revisionId: string | null }
+  | { type: "TOGGLE_REVISION_PIN"; revisionId: string }
   | { type: "CREATE_BRANCH"; name: string; fromRevisionId: string }
   | { type: "SWITCH_BRANCH"; branchId: string }
   | { type: "UPDATE_LLM_SETTINGS"; settings: Settings["llm"] }
@@ -141,6 +142,21 @@ const reducer = (state: AppState, action: Action): AppState => {
       };
     case "COMPARE_REVISION":
       return { ...state, compareRevisionId: action.revisionId };
+    case "TOGGLE_REVISION_PIN": {
+      const revision = state.document.revisions[action.revisionId];
+      if (!revision) return state;
+      const updated: Revision = { ...revision, pinned: !revision.pinned };
+      return {
+        ...state,
+        document: {
+          ...state.document,
+          revisions: {
+            ...state.document.revisions,
+            [updated.id]: updated
+          }
+        }
+      };
+    }
     case "CREATE_BRANCH": {
       const branch: Branch = {
         id: createId(),

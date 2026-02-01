@@ -8,6 +8,7 @@ export type Revision = {
   content: string;
   rationale: string;
   stage: StageId;
+  pinned?: boolean;
 };
 
 export type Branch = {
