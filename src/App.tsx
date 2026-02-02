@@ -1,18 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { runLlmStage } from "./agents/llmAdapter";
 import { stages } from "./agents/pipeline";
+import { applyOutlineToContent, buildOutlineFromBrief, summarizeBrief } from "./lib/brief";
 import { DiffView } from "./lib/diff";
 import { wrapHtml } from "./lib/exportDoc";
 import { createId } from "./lib/id";
 import { renderMarkdown } from "./lib/markdown";
+import { countWords, formatReadingTime } from "./lib/metrics";
 import { printHtml } from "./lib/print";
+import { getTemplateById, templates } from "./lib/templates";
 import { exportState, importState, saveState } from "./state/persistence";
 import { useStore } from "./state/useStore";
-import type { Revision, StageId } from "./state/types";
+import type { ProjectBrief, Revision, StageId } from "./state/types";
+import { BriefPanel } from "./ui/BriefPanel";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Editor } from "./ui/Editor";
 import { HistoryPanel } from "./ui/HistoryPanel";
 import { MarkdownPreview } from "./ui/MarkdownPreview";
+import { MetricsPanel } from "./ui/MetricsPanel";
 import { PipelinePanel } from "./ui/PipelinePanel";
 import { SettingsPanel } from "./ui/SettingsPanel";
 import "./styles.css";
@@ -39,6 +44,7 @@ export const App: React.FC = () => {
   const [mergeSourceId, setMergeSourceId] = useState("");
   const [diffMode, setDiffMode] = useState<"inline" | "side">("inline");
   const [llmStatus, setLlmStatus] = useState("Not tested");
+  const [runningStage, setRunningStage] = useState<StageId | null>(null);
   const [pendingNav, setPendingNav] = useState<
     | { kind: "select-revision"; revisionId: string }
     | { kind: "switch-branch"; branchId: string }
@@ -55,6 +61,17 @@ export const App: React.FC = () => {
   const compareRevision = state.compareRevisionId
     ? doc.revisions[state.compareRevisionId]
     : null;
+  const brief = doc.brief;
+  const briefSummary = useMemo(() => summarizeBrief(brief), [brief]);
+
+  const wordCount = useMemo(() => countWords(workingContent), [workingContent]);
+  const readingTime = useMemo(() => formatReadingTime(wordCount), [wordCount]);
+  const targetWords = brief.length;
+  const progress = targetWords > 0 ? Math.min(wordCount / targetWords, 1) : 0;
+  const lastUpdated = useMemo(
+    () => new Date(selectedRevision.createdAt).toLocaleString(),
+    [selectedRevision.createdAt]
+  );
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -92,11 +109,78 @@ export const App: React.FC = () => {
     [dispatch, isDirty, selectedRevision.id, selectedRevision.stage, workingContent]
   );
 
+  const updateBrief = useCallback(
+    (patch: Partial<ProjectBrief>) => {
+      dispatch({ type: "UPDATE_BRIEF", brief: patch });
+    },
+    [dispatch]
+  );
+
+  const handleApplyTemplate = useCallback(
+    (templateId: string) => {
+      const template = getTemplateById(templateId);
+      if (!template) return;
+
+      let parentId = selectedRevision.id;
+      if (isDirty) {
+        parentId = commitWorkingCopy("Auto-commit before template") ?? parentId;
+      }
+
+      const revision: Revision = {
+        id: createId(),
+        parentId,
+        createdAt: nowIso(),
+        author: "user",
+        content: template.content,
+        rationale: `Template: ${template.name}`,
+        stage: "draft"
+      };
+      dispatch({ type: "ADD_REVISION", revision });
+      dispatch({ type: "UPDATE_TITLE", title: template.title });
+      dispatch({
+        type: "UPDATE_BRIEF",
+        brief: { ...template.brief, templateId: template.id }
+      });
+    },
+    [commitWorkingCopy, dispatch, isDirty, selectedRevision.id]
+  );
+
+  const handleGenerateOutline = useCallback(() => {
+    const includeTitle = !/^#\s+/.test(workingContent.trim());
+    const outline = buildOutlineFromBrief(doc.title, brief, includeTitle);
+    const output = applyOutlineToContent(workingContent, outline);
+
+    let parentId = selectedRevision.id;
+    if (isDirty) {
+      parentId = commitWorkingCopy("Auto-commit before outline") ?? parentId;
+    }
+
+    const revision: Revision = {
+      id: createId(),
+      parentId,
+      createdAt: nowIso(),
+      author: "agent",
+      content: output,
+      rationale: "Generated outline from project brief.",
+      stage: "draft"
+    };
+    dispatch({ type: "ADD_REVISION", revision });
+  }, [
+    brief,
+    commitWorkingCopy,
+    dispatch,
+    doc.title,
+    isDirty,
+    selectedRevision.id,
+    workingContent
+  ]);
+
   const handleRunStage = useCallback(
     async (stageId: StageId) => {
       const stage = stages.find((item) => item.id === stageId);
       if (!stage) return;
 
+      setRunningStage(stageId);
       let parentId = selectedRevision.id;
       let input = workingContent;
 
@@ -106,38 +190,44 @@ export const App: React.FC = () => {
         input = workingContent;
       }
 
-      if (llmEnabled) {
-        const result = await runLlmStage({
-          stage: stageId,
-          input,
-          model: llmModel
-        });
+      try {
+        if (llmEnabled) {
+          const result = await runLlmStage({
+            stage: stageId,
+            input,
+            model: llmModel,
+            briefSummary
+          });
+          const revision: Revision = {
+            id: createId(),
+            parentId,
+            createdAt: nowIso(),
+            author: "agent",
+            content: result.output,
+            rationale: result.rationale,
+            stage: stageId
+          };
+          dispatch({ type: "ADD_REVISION", revision });
+          return;
+        }
+
+        const { output, rationale } = stage.run(input);
         const revision: Revision = {
           id: createId(),
           parentId,
           createdAt: nowIso(),
           author: "agent",
-          content: result.output,
-          rationale: result.rationale,
+          content: output,
+          rationale: briefSummary ? `${rationale} · ${briefSummary}` : rationale,
           stage: stageId
         };
         dispatch({ type: "ADD_REVISION", revision });
-        return;
+      } finally {
+        setRunningStage(null);
       }
-
-      const { output, rationale } = stage.run(input);
-      const revision: Revision = {
-        id: createId(),
-        parentId,
-        createdAt: nowIso(),
-        author: "agent",
-        content: output,
-        rationale: rationale,
-        stage: stageId
-      };
-      dispatch({ type: "ADD_REVISION", revision });
     },
     [
+      briefSummary,
       commitWorkingCopy,
       dispatch,
       isDirty,
@@ -268,7 +358,8 @@ export const App: React.FC = () => {
     const result = await runLlmStage({
       stage: "draft",
       input: workingContent,
-      model: state.settings.llm.model
+      model: state.settings.llm.model,
+      briefSummary
     });
     setLlmStatus(`Stub ready: ${result.rationale}`);
   };
@@ -310,6 +401,10 @@ export const App: React.FC = () => {
         event.preventDefault();
         handleExportPdf();
       }
+      if (event.shiftKey && event.key.toLowerCase() === "o") {
+        event.preventDefault();
+        handleGenerateOutline();
+      }
     };
 
     window.addEventListener("keydown", handler);
@@ -319,6 +414,7 @@ export const App: React.FC = () => {
     handleExport,
     handleExportHtml,
     handleExportPdf,
+    handleGenerateOutline,
     handleRunStage
   ]);
 
@@ -498,10 +594,27 @@ export const App: React.FC = () => {
         </section>
 
         <aside className="sidebar">
+          <BriefPanel
+            brief={brief}
+            templates={templates}
+            onUpdate={updateBrief}
+            onApplyTemplate={handleApplyTemplate}
+            onGenerateOutline={handleGenerateOutline}
+          />
+          <MetricsPanel
+            wordCount={wordCount}
+            readingTime={readingTime}
+            targetWords={targetWords}
+            progress={progress}
+            stageLabel={stageLabel(selectedRevision.stage)}
+            lastUpdated={lastUpdated}
+            isDirty={isDirty}
+          />
           <PipelinePanel
             stages={stages}
             currentStage={selectedRevision.stage}
             onRun={(stage) => void handleRunStage(stage.id)}
+            runningStageId={runningStage}
           />
           <HistoryPanel
             branch={currentBranch}
@@ -530,6 +643,7 @@ export const App: React.FC = () => {
             <p className="muted">Cmd/Ctrl + Shift + E: export JSON</p>
             <p className="muted">Cmd/Ctrl + Shift + H: export HTML</p>
             <p className="muted">Cmd/Ctrl + Shift + P: print/PDF</p>
+            <p className="muted">Cmd/Ctrl + Shift + O: generate outline</p>
           </div>
         </aside>
       </main>

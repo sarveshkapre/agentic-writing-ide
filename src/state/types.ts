@@ -17,10 +17,21 @@ export type Branch = {
   headRevisionId: string;
 };
 
+export type ProjectBrief = {
+  audience: string;
+  goal: string;
+  tone: string;
+  length: number;
+  keyPoints: string[];
+  constraints: string;
+  templateId: string;
+};
+
 export type DocumentModel = {
   id: string;
   title: string;
   currentBranchId: string;
+  brief: ProjectBrief;
   branches: Record<string, Branch>;
   revisions: Record<string, Revision>;
 };

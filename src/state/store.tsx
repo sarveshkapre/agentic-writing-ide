@@ -1,9 +1,11 @@
 import React, { createContext, useMemo, useReducer } from "react";
+import { defaultBrief, normalizeBrief } from "../lib/brief";
 import { createId } from "../lib/id";
 import type {
   AppState,
   Branch,
   DocumentModel,
+  ProjectBrief,
   Revision,
   StageId,
   Settings
@@ -34,6 +36,7 @@ const createInitialState = (): AppState => {
     id: createId(),
     title: "Untitled Draft",
     currentBranchId: mainBranch.id,
+    brief: defaultBrief(),
     branches: { [mainBranch.id]: mainBranch },
     revisions: { [baseRevision.id]: baseRevision }
   };
@@ -64,11 +67,11 @@ const normalizeState = (state: AppState): AppState => {
     }
   };
 
+  const document = state.document ?? createInitialState().document;
   const selected =
-    state.document?.revisions?.[state.selectedRevisionId] ??
-    state.document?.revisions?.[
-      state.document?.branches?.[state.document?.currentBranchId]?.headRevisionId ??
-        ""
+    document?.revisions?.[state.selectedRevisionId] ??
+    document?.revisions?.[
+      document?.branches?.[document?.currentBranchId]?.headRevisionId ?? ""
     ];
 
   const workingContent =
@@ -76,8 +79,14 @@ const normalizeState = (state: AppState): AppState => {
       ? state.workingContent
       : selected?.content ?? "";
 
+  const brief: ProjectBrief = normalizeBrief(document?.brief);
+
   return {
     ...state,
+    document: {
+      ...document,
+      brief
+    },
     workingContent,
     settings
   };
@@ -86,6 +95,7 @@ const normalizeState = (state: AppState): AppState => {
 export type Action =
   | { type: "UPDATE_CONTENT"; content: string }
   | { type: "UPDATE_TITLE"; title: string }
+  | { type: "UPDATE_BRIEF"; brief: Partial<ProjectBrief> }
   | { type: "ADD_REVISION"; revision: Revision }
   | { type: "SELECT_REVISION"; revisionId: string }
   | { type: "COMPARE_REVISION"; revisionId: string | null }
@@ -109,6 +119,22 @@ const reducer = (state: AppState, action: Action): AppState => {
         document: {
           ...state.document,
           title: action.title
+        }
+      };
+    }
+    case "UPDATE_BRIEF": {
+      const nextBrief = {
+        ...state.document.brief,
+        ...action.brief
+      };
+      if ("keyPoints" in action.brief) {
+        nextBrief.keyPoints = action.brief.keyPoints ?? [];
+      }
+      return {
+        ...state,
+        document: {
+          ...state.document,
+          brief: nextBrief
         }
       };
     }

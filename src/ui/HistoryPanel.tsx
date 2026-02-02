@@ -72,7 +72,10 @@ export const HistoryPanel: React.FC<{
       !item.pinned && matchesFilters(item) && pinnedFilter === "all"
   );
 
-  const totalCount = pinnedFilter === "pinned" ? pinned.length : pinned.length + unpinned.length;
+  const visibleItems =
+    pinnedFilter === "pinned" ? pinned : [...pinned, ...unpinned];
+  const totalCount = visibleItems.length;
+  const isEmpty = visibleItems.length === 0;
 
   return (
     <div className="panel history">
@@ -146,6 +149,9 @@ export const HistoryPanel: React.FC<{
       </div>
       <p className="muted">{totalCount} revisions</p>
       <div className="history-list">
+        {isEmpty ? (
+          <p className="muted empty">No revisions match the current filters.</p>
+        ) : null}
         {pinned.length > 0 ? (
           <div className="history-section">
             <p className="muted">Pinned</p>
