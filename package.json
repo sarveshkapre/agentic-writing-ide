@@ -2,6 +2,7 @@
   "name": "agentic-writing-ide",
   "private": true,
   "version": "0.1.0",
+  "description": "Local-first writing IDE with an agent revision pipeline and branchable history.",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,6 +1,8 @@
 # Agentic Writing IDE
 
-A document-first writing IDE that runs a draft through a multi-stage agent pipeline (draft -> critique -> revise -> polish) with branchable history, diffs, and rationales. Local-first and usable offline.
+Local-first writing IDE with an agent revision pipeline and branchable history.
+
+Runs a draft through a multi-stage pipeline (draft → critique → revise → polish) with diffs and rationales, and works offline.
 
 ## Features
 - Document editor with live markdown preview.
