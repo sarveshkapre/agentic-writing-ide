@@ -14,6 +14,8 @@
 ## Implemented
 - [x] 2026-02-08: Fixed CI workflow parse failure (`.github/workflows/ci.yml`) by quoting `pull_request` in expression.
   Evidence: `.github/workflows/ci.yml`, `npm run lint:workflows`.
+- [x] 2026-02-08: Fixed gitleaks Git range failures on push by fetching full git history in CI checkout.
+  Evidence: `.github/workflows/ci.yml`, GitHub Actions run `21807361590` failure log, follow-up run after patch.
 - [x] 2026-02-08: Added local workflow lint command with installer-backed `actionlint`.
   Evidence: `scripts/lint-workflows.sh`, `package.json`, `README.md`, `docs/PROJECT.md`.
 - [x] 2026-02-08: Added revision-scoped draft stash and restore on revision/branch navigation.
@@ -29,6 +31,7 @@
 
 ## Insights
 - Historical CI failures (`#21579381622`, `#21579004301`, `#21553547452`) were parse-time workflow failures with zero jobs; `actionlint` reproduced and pinpointed the invalid expression.
+- Gitleaks GitHub Action expects commit range history on push events; shallow clone breaks scans with `ambiguous argument A^..B`.
 - Revision-level stash can be implemented without new persistence storage keys by extending existing state and reducer transitions (`UPDATE_CONTENT`, `SELECT_REVISION`, `SWITCH_BRANCH`, `ADD_REVISION`).
 - Import UX reliability needs explicit status messaging because silent parse failures look like no-op saves to users.
 

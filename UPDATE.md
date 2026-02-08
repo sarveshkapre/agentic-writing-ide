@@ -2,6 +2,7 @@
 
 ## What changed
 - Fixed CI workflow parsing in `.github/workflows/ci.yml` by correcting the `pull_request` expression string literal.
+- Fixed CI gitleaks job failures on push by using full-history checkout (`fetch-depth: 0`).
 - Added revision-scoped stash behavior for dirty working copies so uncommitted edits can be preserved per revision.
 - Added `Stash & continue` option in the navigation guard when switching revisions/branches with uncommitted edits.
 - Hardened import flow: JSON import now validates payload shape and shows explicit error status when invalid.
