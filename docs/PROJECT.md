@@ -5,6 +5,7 @@
 - dev: `npm run dev`
 - test: `npm run test`
 - lint: `npm run lint`
+- lint workflows: `npm run lint:workflows`
 - typecheck: `npm run typecheck`
 - build: `npm run build`
 - check: `npm run check`

@@ -46,13 +46,13 @@ Data model (MVP)
 4. UX polish, a11y, docs.
 
 ## MVP checklist
-- [ ] Create/open document
-- [ ] Run pipeline stages offline
-- [ ] Commit per stage with rationale
-- [ ] View history and switch branches
-- [ ] Diff two revisions
-- [ ] Import/export JSON
-- [ ] Tests pass (`make check`)
+- [x] Create/open document
+- [x] Run pipeline stages offline
+- [x] Commit per stage with rationale
+- [x] View history and switch branches
+- [x] Diff two revisions
+- [x] Import/export JSON
+- [x] Tests pass (`make check`)
 
 ## Risks & mitigations
 - History complexity: keep model minimal; avoid merge in MVP.

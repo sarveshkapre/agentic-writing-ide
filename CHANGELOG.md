@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased
+- CI: fixed invalid `dependency-review` condition in `.github/workflows/ci.yml` (`'pull_request'` string literal), which previously prevented CI jobs from starting.
+- Added revision-scoped draft stash behavior so uncommitted edits can be preserved and restored when navigating between revisions/branches.
+- Navigation guard now supports `Stash & continue` in addition to commit/discard.
+- Import reliability: JSON import now validates shape, reports friendly errors, and uses a `FileReader` fallback when `File.text()` is unavailable.
+- Tests: added smoke coverage for stash navigation + invalid import handling.
+- DevEx: added `npm run lint:workflows` via `scripts/lint-workflows.sh` to run `actionlint` locally.
 - Working copy editing (revisions are immutable); stage/branch actions auto-commit dirty edits.
 - Navigation guard: prompts to commit/discard uncommitted edits when switching revisions/branches.
 - History ergonomics: pin revisions and filter to pinned only.
