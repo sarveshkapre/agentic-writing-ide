@@ -3,6 +3,7 @@
 ## Unreleased
 - CI: fixed invalid `dependency-review` condition in `.github/workflows/ci.yml` (`'pull_request'` string literal), which previously prevented CI jobs from starting.
 - CI: fixed gitleaks push-scan failures by setting `actions/checkout` `fetch-depth: 0` in the `gitleaks` job.
+- CI: upgraded CodeQL action steps from `github/codeql-action@v3` to `@v4` (future deprecation warning remediation).
 - Added revision-scoped draft stash behavior so uncommitted edits can be preserved and restored when navigating between revisions/branches.
 - Navigation guard now supports `Stash & continue` in addition to commit/discard.
 - Import reliability: JSON import now validates shape, reports friendly errors, and uses a `FileReader` fallback when `File.text()` is unavailable.
