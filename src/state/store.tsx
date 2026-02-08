@@ -46,6 +46,7 @@ const createInitialState = (): AppState => {
     selectedRevisionId: baseRevision.id,
     compareRevisionId: null,
     workingContent: baseRevision.content,
+    draftStashByRevisionId: {},
     settings: {
       llm: {
         enabled: false,
@@ -80,6 +81,23 @@ const normalizeState = (state: AppState): AppState => {
       : selected?.content ?? "";
 
   const brief: ProjectBrief = normalizeBrief(document?.brief);
+  const rawStash =
+    state.draftStashByRevisionId &&
+    typeof state.draftStashByRevisionId === "object"
+      ? state.draftStashByRevisionId
+      : {};
+  const draftStashByRevisionId = Object.fromEntries(
+    Object.entries(rawStash).filter(([revisionId, value]) => {
+      return (
+        typeof value === "string" &&
+        document?.revisions?.[revisionId] &&
+        value !== document.revisions[revisionId]?.content
+      );
+    })
+  );
+  if (selected && workingContent !== selected.content) {
+    draftStashByRevisionId[selected.id] = workingContent;
+  }
 
   return {
     ...state,
@@ -88,6 +106,7 @@ const normalizeState = (state: AppState): AppState => {
       brief
     },
     workingContent,
+    draftStashByRevisionId,
     settings
   };
 };
@@ -108,9 +127,18 @@ export type Action =
 const reducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
     case "UPDATE_CONTENT": {
+      const selectedRevision = state.document.revisions[state.selectedRevisionId];
+      const nextStash = { ...state.draftStashByRevisionId };
+      if (selectedRevision && action.content !== selectedRevision.content) {
+        nextStash[state.selectedRevisionId] = action.content;
+      } else {
+        delete nextStash[state.selectedRevisionId];
+      }
+
       return {
         ...state,
-        workingContent: action.content
+        workingContent: action.content,
+        draftStashByRevisionId: nextStash
       };
     }
     case "UPDATE_TITLE": {
@@ -142,6 +170,11 @@ const reducer = (state: AppState, action: Action): AppState => {
       const revision = action.revision;
       const branch = state.document.branches[state.document.currentBranchId];
       const updatedBranch: Branch = { ...branch, headRevisionId: revision.id };
+      const nextStash = { ...state.draftStashByRevisionId };
+      if (revision.parentId) {
+        delete nextStash[revision.parentId];
+      }
+      delete nextStash[revision.id];
       return {
         ...state,
         document: {
@@ -156,16 +189,21 @@ const reducer = (state: AppState, action: Action): AppState => {
           }
         },
         selectedRevisionId: revision.id,
-        workingContent: revision.content
+        workingContent: revision.content,
+        draftStashByRevisionId: nextStash
       };
     }
-    case "SELECT_REVISION":
+    case "SELECT_REVISION": {
+      const selectedRevision = state.document.revisions[action.revisionId];
       return {
         ...state,
         selectedRevisionId: action.revisionId,
         workingContent:
-          state.document.revisions[action.revisionId]?.content ?? state.workingContent
+          state.draftStashByRevisionId[action.revisionId] ??
+          selectedRevision?.content ??
+          state.workingContent
       };
+    }
     case "COMPARE_REVISION":
       return { ...state, compareRevisionId: action.revisionId };
     case "TOGGLE_REVISION_PIN": {
@@ -202,6 +240,7 @@ const reducer = (state: AppState, action: Action): AppState => {
     }
     case "SWITCH_BRANCH": {
       const branch = state.document.branches[action.branchId];
+      const branchHeadRevision = state.document.revisions[branch.headRevisionId];
       return {
         ...state,
         document: {
@@ -210,7 +249,9 @@ const reducer = (state: AppState, action: Action): AppState => {
         },
         selectedRevisionId: branch.headRevisionId,
         workingContent:
-          state.document.revisions[branch.headRevisionId]?.content ?? state.workingContent
+          state.draftStashByRevisionId[branch.headRevisionId] ??
+          branchHeadRevision?.content ??
+          state.workingContent
       };
     }
     case "RESET":

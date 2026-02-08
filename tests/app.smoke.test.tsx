@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import React from "react";
 import { App } from "../src/App";
 import { StoreProvider } from "../src/state/store";
@@ -94,5 +94,50 @@ describe("App", () => {
 
     const checkbox = within(initialItem).getByRole("checkbox");
     expect(checkbox).toBeChecked();
+  });
+
+  it("stashes uncommitted edits when navigating revisions", () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /critique/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /initial draft/i }));
+
+    const editor = screen.getByRole("textbox", {
+      name: /markdown editor/i
+    }) as HTMLTextAreaElement;
+    const stashedLine = "Stashed note for later.";
+    fireEvent.change(editor, { target: { value: `${editor.value}\n\n${stashedLine}` } });
+
+    fireEvent.click(screen.getByRole("button", { name: /flag clarity gaps/i }));
+    fireEvent.click(screen.getByRole("button", { name: /stash & continue/i }));
+
+    expect(editor.value).not.toContain(stashedLine);
+
+    fireEvent.click(screen.getByRole("button", { name: /initial draft/i }));
+    expect(editor.value).toContain(stashedLine);
+  });
+
+  it("shows an error status for invalid JSON imports", async () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    const input = screen.getByLabelText(/import json/i) as HTMLInputElement;
+    const invalidFile = new File(["{not-valid-json"], "invalid.json", {
+      type: "application/json"
+    });
+
+    fireEvent.change(input, { target: { files: [invalidFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/import failed:/i)).toBeInTheDocument();
+    });
   });
 });

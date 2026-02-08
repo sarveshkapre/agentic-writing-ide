@@ -41,6 +41,7 @@ export type AppState = {
   selectedRevisionId: string;
   compareRevisionId: string | null;
   workingContent: string;
+  draftStashByRevisionId: Record<string, string>;
   settings: Settings;
 };
 

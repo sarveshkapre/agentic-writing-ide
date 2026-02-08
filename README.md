@@ -21,6 +21,7 @@ npm run dev
 ## Quality gate
 ```bash
 npm run check
+npm run lint:workflows
 ```
 
 ## Keyboard shortcuts

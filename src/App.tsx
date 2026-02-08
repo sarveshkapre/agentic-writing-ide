@@ -37,6 +37,19 @@ const downloadFile = (name: string, content: string, type: string) => {
   URL.revokeObjectURL(url);
 };
 
+const readFileAsText = (file: File): Promise<string> => {
+  if (typeof file.text === "function") {
+    return file.text();
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Could not read import file."));
+    reader.readAsText(file);
+  });
+};
+
 export const App: React.FC = () => {
   const { state, dispatch } = useStore();
   const [saveStatus, setSaveStatus] = useState("Idle");
@@ -314,10 +327,16 @@ export const App: React.FC = () => {
 
   const handleImport = (file: File | null) => {
     if (!file) return;
-    file.text().then((text) => {
-      const imported = importState(text);
-      dispatch({ type: "RESET", state: imported });
-    });
+    readFileAsText(file)
+      .then((text) => {
+        const imported = importState(text);
+        dispatch({ type: "RESET", state: imported });
+        setSaveStatus(`Imported ${new Date().toLocaleTimeString()}`);
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : "Import failed.";
+        setSaveStatus(`Import failed: ${message}`);
+      });
   };
 
   const requestSelectRevision = useCallback(
@@ -332,13 +351,13 @@ export const App: React.FC = () => {
   );
 
   const handleResolvePendingNav = useCallback(
-    (mode: "commit" | "discard") => {
+    (mode: "commit" | "discard" | "stash") => {
       const next = pendingNav;
       if (!next) return;
 
       if (mode === "commit") {
         commitWorkingCopy("Auto-commit before navigation");
-      } else {
+      } else if (mode === "discard") {
         dispatch({ type: "UPDATE_CONTENT", content: selectedRevision.content });
       }
 
@@ -651,13 +670,19 @@ export const App: React.FC = () => {
       {pendingNav ? (
         <ConfirmDialog
           title="You have uncommitted changes"
-          description="Commit your edits, discard them, or cancel to keep editing."
+          description="Commit, stash, or discard your edits before navigating away."
           onClose={() => setPendingNav(null)}
           actions={[
             {
               id: "commit",
               label: "Commit & continue",
               onSelect: () => handleResolvePendingNav("commit")
+            },
+            {
+              id: "stash",
+              label: "Stash & continue",
+              variant: "ghost",
+              onSelect: () => handleResolvePendingNav("stash")
             },
             {
               id: "discard",
