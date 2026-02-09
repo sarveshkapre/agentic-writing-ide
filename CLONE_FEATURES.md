@@ -7,10 +7,15 @@
 - Gaps found during codebase exploration
 
 ## Candidate Features To Do
-- [ ] P1: Add optional real LLM provider adapter with explicit offline fallback and key health checks.
-- [ ] P1: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
+- [ ] P0: Commit root `AGENTS.md` autonomous contract + prevent drift with `docs/AGENTS.md` pointer.
+- [ ] P1: Add optional local LLM provider adapter (Ollama first) with explicit offline fallback + connection health checks.
+- [ ] P1: Add non-blocking toast notifications (with an a11y live region) for branch/import/export/merge/LLM outcomes.
+- [ ] P2: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
-- [ ] P2: Add non-blocking toast notifications for branch/import/merge outcomes.
+- [ ] P2: Add keyboard shortcut cheat sheet modal (Cmd/Ctrl + /) and surface `Shift+O` outline shortcut.
+- [ ] P2: Add export templates/themes for HTML/PDF (simple preset library).
+- [ ] P3: Add optional OpenAI-compatible local server adapter (LM Studio) for users who prefer that API shape.
+- [ ] P3: Multi-document library (create/switch/rename/delete) with local persistence.
 
 ## Implemented
 - [x] 2026-02-09: Added three-way merge preview with explicit conflict resolution before merge commit.
@@ -54,6 +59,9 @@
 - Import UX reliability needs explicit status messaging because silent parse failures look like no-op saves to users.
 - Three-way merge preview reduces destructive merge risk, but line-index matching can still over-report conflicts when long inserts shift line positions.
 - Running workflow lint in CI prevents "failed to parse workflow" regressions from reaching merge gates.
+- Market scan (untrusted): Local LLM runtimes are an easy "real provider" step that stays local-first:
+  - Ollama exposes a simple HTTP API (`/api/tags`, `/api/generate`): https://github.com/ollama/ollama/blob/main/docs/api.md
+  - LM Studio runs a local OpenAI-compatible server (`/v1/models`, `/v1/chat/completions`): https://lmstudio.ai/docs/api/openai-api
 
 ## Notes
 - This file is maintained by the autonomous clone loop.

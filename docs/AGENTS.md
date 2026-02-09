@@ -3,6 +3,10 @@
 ## Purpose
 Guidance for working in this repo as an automated or human agent.
 
+## Canonical Contract
+The canonical autonomous engineering contract lives in `AGENTS.md` at the repo root.
+Keep these docs aligned with the contract, but avoid duplicating policy text to prevent drift.
+
 ## Guardrails
 - Keep changes local-first and offline by default.
 - No authentication or user accounts.
