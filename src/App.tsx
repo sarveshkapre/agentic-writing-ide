@@ -3,7 +3,7 @@ import { fetchProviderModels, runLlmStage, testLlmProvider } from "./agents/llmA
 import { stages } from "./agents/pipeline";
 import { applyOutlineToContent, buildOutlineFromBrief, summarizeBrief } from "./lib/brief";
 import { DiffView } from "./lib/diff";
-import { wrapHtml } from "./lib/exportDoc";
+import { exportThemes, wrapHtml } from "./lib/exportDoc";
 import { createId } from "./lib/id";
 import { renderMarkdown } from "./lib/markdown";
 import {
@@ -102,6 +102,9 @@ export const App: React.FC = () => {
   const workingContent = state.workingContent;
   const isDirty = workingContent !== selectedRevision.content;
   const llmEnabled = state.settings.llm.enabled;
+  const focusMode = state.settings.ui.focusMode;
+  const typewriterMode = state.settings.ui.typewriterMode;
+  const exportThemeId = state.settings.ui.exportThemeId;
   const currentBranch = doc.branches[doc.currentBranchId];
   const compareRevision = state.compareRevisionId
     ? doc.revisions[state.compareRevisionId]
@@ -528,17 +531,17 @@ export const App: React.FC = () => {
 
   const handleExportHtml = useCallback(() => {
     const html = renderMarkdown(workingContent);
-    const docHtml = wrapHtml(doc.title, html);
+    const docHtml = wrapHtml(doc.title, html, exportThemeId);
     downloadFile("agentic-draft.html", docHtml, "text/html");
     pushToast("success", "Exported HTML.");
-  }, [doc.title, pushToast, workingContent]);
+  }, [doc.title, exportThemeId, pushToast, workingContent]);
 
   const handleExportPdf = useCallback(() => {
     const html = renderMarkdown(workingContent);
-    const docHtml = wrapHtml(doc.title, html);
+    const docHtml = wrapHtml(doc.title, html, exportThemeId);
     printHtml(docHtml);
     pushToast("info", "Print dialog opened.");
-  }, [doc.title, pushToast, workingContent]);
+  }, [doc.title, exportThemeId, pushToast, workingContent]);
 
   const handleImport = (file: File | null, input: HTMLInputElement | null) => {
     if (!file) {
@@ -667,6 +670,14 @@ export const App: React.FC = () => {
         event.preventDefault();
         handleGenerateOutline();
       }
+      if (event.shiftKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        dispatch({ type: "TOGGLE_FOCUS_MODE" });
+      }
+      if (event.shiftKey && event.key.toLowerCase() === "t") {
+        event.preventDefault();
+        dispatch({ type: "TOGGLE_TYPEWRITER_MODE" });
+      }
       if (event.key === "/" || event.key === "?") {
         event.preventDefault();
         setShowShortcuts(true);
@@ -676,6 +687,7 @@ export const App: React.FC = () => {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [
+    dispatch,
     handleCommitDraft,
     handleExport,
     handleExportHtml,
@@ -685,7 +697,7 @@ export const App: React.FC = () => {
   ]);
 
   return (
-    <div className="app">
+    <div className={`app${focusMode ? " focus-mode" : ""}`}>
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       {showShortcuts ? (
         <ShortcutsModal onClose={() => setShowShortcuts(false)} />
@@ -697,6 +709,39 @@ export const App: React.FC = () => {
         </div>
         <div className="topbar-actions">
           <span className="status">{saveStatus}</span>
+          <button
+            className={focusMode ? "ghost active" : "ghost"}
+            type="button"
+            onClick={() => dispatch({ type: "TOGGLE_FOCUS_MODE" })}
+          >
+            Focus mode
+          </button>
+          <button
+            className={typewriterMode ? "ghost active" : "ghost"}
+            type="button"
+            onClick={() => dispatch({ type: "TOGGLE_TYPEWRITER_MODE" })}
+          >
+            Typewriter
+          </button>
+          <label className="ghost select">
+            <span className="sr-only">Export theme</span>
+            <select
+              aria-label="Export theme"
+              value={exportThemeId}
+              onChange={(event) =>
+                dispatch({
+                  type: "UPDATE_EXPORT_THEME",
+                  themeId: event.target.value
+                })
+              }
+            >
+              {exportThemes.map((theme) => (
+                <option key={theme.id} value={theme.id}>
+                  Export: {theme.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <button className="ghost" type="button" onClick={handleExport}>
             Export JSON
           </button>
@@ -729,6 +774,25 @@ export const App: React.FC = () => {
                   value={doc.title}
                   onChange={(event) =>
                     dispatch({ type: "UPDATE_TITLE", title: event.target.value })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>Version label</span>
+                <input
+                  value={selectedRevision.label ?? ""}
+                  placeholder={
+                    isDirty
+                      ? "Commit changes to label this version"
+                      : "(optional) e.g. ready-to-share"
+                  }
+                  disabled={isDirty}
+                  onChange={(event) =>
+                    dispatch({
+                      type: "UPDATE_REVISION_LABEL",
+                      revisionId: selectedRevision.id,
+                      label: event.target.value
+                    })
                   }
                 />
               </label>
@@ -854,6 +918,7 @@ export const App: React.FC = () => {
                 onChange={(value) =>
                   dispatch({ type: "UPDATE_CONTENT", content: value })
                 }
+                typewriter={typewriterMode}
               />
               <div className="editor-actions">
                 <button
@@ -874,10 +939,12 @@ export const App: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="panel">
-              <h3>Preview</h3>
-              <MarkdownPreview markdown={workingContent} />
-            </div>
+            {!focusMode ? (
+              <div className="panel">
+                <h3>Preview</h3>
+                <MarkdownPreview markdown={workingContent} />
+              </div>
+            ) : null}
           </div>
 
           {compareRevision ? (
@@ -925,70 +992,76 @@ export const App: React.FC = () => {
           ) : null}
         </section>
 
-        <aside className="sidebar">
-          <BriefPanel
-            brief={brief}
-            templates={templates}
-            onUpdate={updateBrief}
-            onApplyTemplate={handleApplyTemplate}
-            onGenerateOutline={handleGenerateOutline}
-          />
-          <MetricsPanel
-            wordCount={wordCount}
-            readingTime={readingTime}
-            targetWords={targetWords}
-            progress={progress}
-            stageLabel={stageLabel(selectedRevision.stage)}
-            lastUpdated={lastUpdated}
-            isDirty={isDirty}
-          />
-          <PipelinePanel
-            stages={stages}
-            currentStage={selectedRevision.stage}
-            onRun={(stage) => void handleRunStage(stage.id)}
-            runningStageId={runningStage}
-          />
-          <HistoryPanel
-            branch={currentBranch}
-            revisions={doc.revisions}
-            selectedId={selectedRevision.id}
-            compareId={state.compareRevisionId}
-            stages={stages.map((stage) => stage.id)}
-            onSelect={requestSelectRevision}
-            onCompare={(id) => dispatch({ type: "COMPARE_REVISION", revisionId: id })}
-            onTogglePin={(id) =>
-              dispatch({ type: "TOGGLE_REVISION_PIN", revisionId: id })
-            }
-          />
-          <SettingsPanel
-            settings={state.settings.llm}
-            onChange={(settings) =>
-              dispatch({ type: "UPDATE_LLM_SETTINGS", settings })
-            }
-            onTest={handleTestLlm}
-            onRefreshModels={handleRefreshModels}
-            testStatus={llmStatus}
-            models={llmModels}
-          />
-          <div className="panel shortcuts">
-            <h3>Shortcuts</h3>
-            <p className="muted">Cmd/Ctrl + 1-4: run stages</p>
-            <p className="muted">Cmd/Ctrl + S: commit edit</p>
-            <p className="muted">Cmd/Ctrl + Shift + E: export JSON</p>
-            <p className="muted">Cmd/Ctrl + Shift + H: export HTML</p>
-            <p className="muted">Cmd/Ctrl + Shift + P: print/PDF</p>
-            <p className="muted">Cmd/Ctrl + Shift + O: generate outline</p>
-            <div className="row">
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setShowShortcuts(true)}
-              >
-                View all (Cmd/Ctrl + /)
-              </button>
+        {!focusMode ? (
+          <aside className="sidebar">
+            <BriefPanel
+              brief={brief}
+              templates={templates}
+              onUpdate={updateBrief}
+              onApplyTemplate={handleApplyTemplate}
+              onGenerateOutline={handleGenerateOutline}
+            />
+            <MetricsPanel
+              wordCount={wordCount}
+              readingTime={readingTime}
+              targetWords={targetWords}
+              progress={progress}
+              stageLabel={stageLabel(selectedRevision.stage)}
+              lastUpdated={lastUpdated}
+              isDirty={isDirty}
+            />
+            <PipelinePanel
+              stages={stages}
+              currentStage={selectedRevision.stage}
+              onRun={(stage) => void handleRunStage(stage.id)}
+              runningStageId={runningStage}
+            />
+            <HistoryPanel
+              branch={currentBranch}
+              revisions={doc.revisions}
+              selectedId={selectedRevision.id}
+              compareId={state.compareRevisionId}
+              stages={stages.map((stage) => stage.id)}
+              onSelect={requestSelectRevision}
+              onCompare={(id) =>
+                dispatch({ type: "COMPARE_REVISION", revisionId: id })
+              }
+              onTogglePin={(id) =>
+                dispatch({ type: "TOGGLE_REVISION_PIN", revisionId: id })
+              }
+            />
+            <SettingsPanel
+              settings={state.settings.llm}
+              onChange={(settings) =>
+                dispatch({ type: "UPDATE_LLM_SETTINGS", settings })
+              }
+              onTest={handleTestLlm}
+              onRefreshModels={handleRefreshModels}
+              testStatus={llmStatus}
+              models={llmModels}
+            />
+            <div className="panel shortcuts">
+              <h3>Shortcuts</h3>
+              <p className="muted">Cmd/Ctrl + 1-4: run stages</p>
+              <p className="muted">Cmd/Ctrl + S: commit edit</p>
+              <p className="muted">Cmd/Ctrl + Shift + E: export JSON</p>
+              <p className="muted">Cmd/Ctrl + Shift + H: export HTML</p>
+              <p className="muted">Cmd/Ctrl + Shift + P: print/PDF</p>
+              <p className="muted">Cmd/Ctrl + Shift + O: generate outline</p>
+              <p className="muted">Cmd/Ctrl + Shift + F: focus mode</p>
+              <p className="muted">Cmd/Ctrl + Shift + T: typewriter mode</p>
+              <div className="row">
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => setShowShortcuts(true)}
+                >
+                  View all (Cmd/Ctrl + /)
+                </button>
+              </div>
             </div>
-          </div>
-        </aside>
+          </aside>
+        ) : null}
       </main>
 
       {pendingNav ? (

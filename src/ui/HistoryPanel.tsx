@@ -39,6 +39,7 @@ export const HistoryPanel: React.FC<{
     "all"
   );
   const [pinnedFilter, setPinnedFilter] = useState<"all" | "pinned">("all");
+  const [labelFilter, setLabelFilter] = useState<"all" | "labeled">("all");
 
   const history = useMemo(
     () => buildHistory(revisions, branch.headRevisionId),
@@ -50,14 +51,18 @@ export const HistoryPanel: React.FC<{
   const headId = branch.headRevisionId;
 
   const matchesFilters = (item: Revision) => {
+    const q = query.trim().toLowerCase();
     const matchesQuery =
-      query.trim() === "" ||
-      item.rationale.toLowerCase().includes(query.toLowerCase()) ||
-      item.content.toLowerCase().includes(query.toLowerCase());
+      q === "" ||
+      item.rationale.toLowerCase().includes(q) ||
+      item.content.toLowerCase().includes(q) ||
+      (item.label ?? "").toLowerCase().includes(q);
     const matchesStage = stageFilter === "all" || item.stage === stageFilter;
     const matchesAuthor =
       authorFilter === "all" || item.author === authorFilter;
-    return matchesQuery && matchesStage && matchesAuthor;
+    const matchesLabel =
+      labelFilter === "all" || Boolean(item.label && item.label.trim());
+    return matchesQuery && matchesStage && matchesAuthor && matchesLabel;
   };
 
   const pinned = history.filter(
@@ -96,6 +101,16 @@ export const HistoryPanel: React.FC<{
         >
           <option value="all">All revisions</option>
           <option value="pinned">Pinned only</option>
+        </select>
+        <select
+          value={labelFilter}
+          onChange={(event) =>
+            setLabelFilter(event.target.value as "all" | "labeled")
+          }
+          aria-label="Label filter"
+        >
+          <option value="all">All labels</option>
+          <option value="labeled">Labeled only</option>
         </select>
         <select
           value={stageFilter}
@@ -169,6 +184,9 @@ export const HistoryPanel: React.FC<{
                     <div className="history-meta">
                       <div>
                         <span className="tag">{item.stage}</span>
+                        {item.label ? (
+                          <span className="tag label">{item.label}</span>
+                        ) : null}
                         <span className="tag pinned">Pinned</span>
                         <span className="time">
                           {new Date(item.createdAt).toLocaleString()}
@@ -218,6 +236,9 @@ export const HistoryPanel: React.FC<{
                 <div className="history-meta">
                   <div>
                     <span className="tag">{item.stage}</span>
+                    {item.label ? (
+                      <span className="tag label">{item.label}</span>
+                    ) : null}
                     <span className="time">
                       {new Date(item.createdAt).toLocaleString()}
                     </span>

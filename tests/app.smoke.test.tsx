@@ -266,4 +266,50 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /close/i }));
     expect(screen.queryByText(/keyboard shortcuts/i)).not.toBeInTheDocument();
   });
+
+  it("toggles focus mode and typewriter mode", () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    const focusButton = screen.getByRole("button", { name: /focus mode/i });
+    const typewriterButton = screen.getByRole("button", { name: /typewriter/i });
+
+    expect(screen.getByRole("heading", { name: /preview/i })).toBeInTheDocument();
+    expect(screen.getByText(/history/i)).toBeInTheDocument();
+
+    fireEvent.click(focusButton);
+    expect(screen.queryByRole("heading", { name: /preview/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/history/i)).not.toBeInTheDocument();
+
+    fireEvent.click(focusButton);
+    expect(screen.getByText(/history/i)).toBeInTheDocument();
+
+    fireEvent.click(typewriterButton);
+    expect(typewriterButton).toHaveClass("active");
+    fireEvent.click(typewriterButton);
+    expect(typewriterButton).not.toHaveClass("active");
+  });
+
+  it("supports labeling revisions and filtering to labeled only", () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /critique/i }));
+
+    const labelInput = screen.getByLabelText(/version label/i) as HTMLInputElement;
+    fireEvent.change(labelInput, { target: { value: "Milestone" } });
+
+    expect(screen.getByText(/milestone/i)).toBeInTheDocument();
+
+    const labelFilter = screen.getByLabelText(/label filter/i) as HTMLSelectElement;
+    fireEvent.change(labelFilter, { target: { value: "labeled" } });
+
+    expect(screen.getByText(/1 revisions/i)).toBeInTheDocument();
+  });
 });

@@ -18,6 +18,8 @@ export const ShortcutsModal: React.FC<{
       { keys: "Cmd/Ctrl + Shift + H", description: "Export HTML" },
       { keys: "Cmd/Ctrl + Shift + P", description: "Print / PDF" },
       { keys: "Cmd/Ctrl + Shift + O", description: "Generate outline" },
+      { keys: "Cmd/Ctrl + Shift + F", description: "Toggle focus mode" },
+      { keys: "Cmd/Ctrl + Shift + T", description: "Toggle typewriter mode" },
       { keys: "Cmd/Ctrl + /", description: "Show shortcuts" }
     ],
     []
@@ -66,4 +68,3 @@ export const ShortcutsModal: React.FC<{
     </div>
   );
 };
-

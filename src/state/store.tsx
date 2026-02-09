@@ -17,6 +17,7 @@ const STAGE_ORDER: StageId[] = ["draft", "critique", "revise", "polish"];
 
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 const DEFAULT_OPENAI_COMPAT_URL = "http://localhost:1234/v1";
+const DEFAULT_EXPORT_THEME_ID = "paper";
 
 const createInitialState = (): AppState => {
   const baseRevision: Revision = {
@@ -57,6 +58,11 @@ const createInitialState = (): AppState => {
         model: "local-stub",
         baseUrl: DEFAULT_OLLAMA_URL,
         apiKey: ""
+      },
+      ui: {
+        focusMode: false,
+        typewriterMode: false,
+        exportThemeId: DEFAULT_EXPORT_THEME_ID
       }
     }
   };
@@ -77,6 +83,7 @@ const normalizeState = (state: AppState): AppState => {
       : provider === "openai-compatible"
         ? DEFAULT_OPENAI_COMPAT_URL
         : DEFAULT_OLLAMA_URL;
+  const exportThemeIdRaw = state.settings?.ui?.exportThemeId;
 
   const settings: Settings = {
     llm: {
@@ -87,6 +94,14 @@ const normalizeState = (state: AppState): AppState => {
         (provider === "stub" ? "local-stub" : ""),
       baseUrl: state.settings?.llm?.baseUrl ?? baseUrlFallback,
       apiKey: state.settings?.llm?.apiKey ?? ""
+    },
+    ui: {
+      focusMode: state.settings?.ui?.focusMode ?? false,
+      typewriterMode: state.settings?.ui?.typewriterMode ?? false,
+      exportThemeId:
+        typeof exportThemeIdRaw === "string" && exportThemeIdRaw.trim() !== ""
+          ? exportThemeIdRaw
+          : DEFAULT_EXPORT_THEME_ID
     }
   };
 
@@ -138,12 +153,16 @@ export type Action =
   | { type: "UPDATE_TITLE"; title: string }
   | { type: "UPDATE_BRIEF"; brief: Partial<ProjectBrief> }
   | { type: "ADD_REVISION"; revision: Revision }
+  | { type: "UPDATE_REVISION_LABEL"; revisionId: string; label: string }
   | { type: "SELECT_REVISION"; revisionId: string }
   | { type: "COMPARE_REVISION"; revisionId: string | null }
   | { type: "TOGGLE_REVISION_PIN"; revisionId: string }
   | { type: "CREATE_BRANCH"; name: string; fromRevisionId: string }
   | { type: "SWITCH_BRANCH"; branchId: string }
   | { type: "UPDATE_LLM_SETTINGS"; settings: Settings["llm"] }
+  | { type: "TOGGLE_FOCUS_MODE" }
+  | { type: "TOGGLE_TYPEWRITER_MODE" }
+  | { type: "UPDATE_EXPORT_THEME"; themeId: string }
   | { type: "RESET"; state: AppState };
 
 const reducer = (state: AppState, action: Action): AppState => {
@@ -215,6 +234,25 @@ const reducer = (state: AppState, action: Action): AppState => {
         draftStashByRevisionId: nextStash
       };
     }
+    case "UPDATE_REVISION_LABEL": {
+      const revision = state.document.revisions[action.revisionId];
+      if (!revision) return state;
+      const nextLabel = action.label.trim();
+      const updated: Revision = {
+        ...revision,
+        label: nextLabel.length ? nextLabel : undefined
+      };
+      return {
+        ...state,
+        document: {
+          ...state.document,
+          revisions: {
+            ...state.document.revisions,
+            [updated.id]: updated
+          }
+        }
+      };
+    }
     case "SELECT_REVISION": {
       const selectedRevision = state.document.revisions[action.revisionId];
       return {
@@ -284,6 +322,39 @@ const reducer = (state: AppState, action: Action): AppState => {
         settings: {
           ...state.settings,
           llm: action.settings
+        }
+      };
+    case "TOGGLE_FOCUS_MODE":
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          ui: {
+            ...state.settings.ui,
+            focusMode: !state.settings.ui.focusMode
+          }
+        }
+      };
+    case "TOGGLE_TYPEWRITER_MODE":
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          ui: {
+            ...state.settings.ui,
+            typewriterMode: !state.settings.ui.typewriterMode
+          }
+        }
+      };
+    case "UPDATE_EXPORT_THEME":
+      return {
+        ...state,
+        settings: {
+          ...state.settings,
+          ui: {
+            ...state.settings.ui,
+            exportThemeId: action.themeId
+          }
         }
       };
     default:

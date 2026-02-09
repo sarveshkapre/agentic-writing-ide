@@ -162,6 +162,18 @@ body {
   gap: 1.5rem;
 }
 
+.focus-mode .layout {
+  grid-template-columns: 1fr;
+}
+
+.focus-mode .editor-grid {
+  grid-template-columns: 1fr;
+}
+
+.focus-mode .editor textarea {
+  min-height: 66vh;
+}
+
 .workspace {
   display: flex;
   flex-direction: column;
@@ -274,6 +286,28 @@ label.ghost.file {
 
 label.ghost.file input {
   display: none;
+}
+
+label.ghost.select {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+}
+
+label.ghost.select select {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 0.55rem 1.1rem;
+  cursor: pointer;
+}
+
+label.ghost.select select:focus {
+  outline: 2px solid rgba(12, 107, 104, 0.35);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 button.primary {
@@ -663,6 +697,14 @@ button:disabled {
 .tag.dirty {
   background: rgba(247, 178, 103, 0.25);
   color: #7a4b16;
+}
+
+.tag.label {
+  background: rgba(247, 178, 103, 0.22);
+  color: #7a4b16;
+  margin-left: 0.4rem;
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 
 .time {

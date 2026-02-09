@@ -8,6 +8,7 @@ export type Revision = {
   content: string;
   rationale: string;
   stage: StageId;
+  label?: string;
   pinned?: boolean;
 };
 
@@ -53,6 +54,13 @@ export type LlmSettings = {
   apiKey: string;
 };
 
+export type UiSettings = {
+  focusMode: boolean;
+  typewriterMode: boolean;
+  exportThemeId: string;
+};
+
 export type Settings = {
   llm: LlmSettings;
+  ui: UiSettings;
 };
