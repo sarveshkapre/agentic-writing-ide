@@ -7,8 +7,6 @@
 - Gaps found during codebase exploration
 
 ## Candidate Features To Do
-- [ ] P1: Outline navigator (headings list) with click-to-jump and optional "follow cursor" mode for long drafts.
-- [ ] P1: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
 - [ ] P2: Document-wide search (working copy + revisions) with jump-to-result and diff context.
 - [ ] P3: Local comments/annotations (non-destructive) tied to revision ranges/line numbers.

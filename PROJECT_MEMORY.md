@@ -197,3 +197,45 @@
 - `gh run watch 21835300061 --exit-status` (pass; CodeQL for `48db002`)
 - `gh run watch 21835373525 --exit-status` (pass; CI for `53a363a`)
 - `gh run watch 21835373495 --exit-status` (pass; CodeQL for `53a363a`)
+
+## Entry 2026-02-09 — Outline navigator for long drafts
+- Decision: Add an Outline panel (Markdown headings list) with click-to-jump and optional follow-cursor highlighting.
+- Why: Long-form writing UX breaks down without fast navigation; an outline pane is a baseline affordance in mature writing tools and reduces reliance on manual scrolling.
+- Evidence:
+  - `src/lib/outline.ts`
+  - `src/ui/OutlinePanel.tsx`
+  - `src/ui/Editor.tsx`
+  - `src/App.tsx`
+  - `tests/outline.test.ts`
+  - `npm run check` (pass)
+- Commit: `a1a82f4f9f1d07b6c5114e70b3414c617b861395`
+- Confidence: high
+- Trust label: verified-local
+- Follow-up:
+  - Consider persisting outline preferences (follow-cursor, collapse state) in `settings.ui` once UX stabilizes.
+
+## Entry 2026-02-09 — E2E smoke + security maintenance
+- Decision: Add a Playwright-driven E2E smoke script (export + stash navigation) and run it in CI; bump dependencies to clear npm audit high/critical advisories.
+- Why: E2E smoke catches UI regressions in critical flows (stash/export) that unit tests miss; keeping audit clean for high/critical issues reduces supply-chain and XSS risk for a writing app that renders user content.
+- Evidence:
+  - `scripts/e2e-smoke.mjs`
+  - `.github/workflows/ci.yml`
+  - `package.json`, `package-lock.json`
+  - `npm run e2e:smoke` (pass)
+  - `npm audit --audit-level=moderate` (fail; remaining moderate advisory requires Vite major upgrade)
+- Commit: `be34cabd25ccafc7e4d9f8fc9808f1f7a2ef5e0c`
+- Confidence: medium-high
+- Trust label: verified-local
+- Follow-up:
+  - Track the remaining moderate `esbuild` dev-server advisory; reassess when Vite major upgrade is low-risk for this repo.
+
+## Verification Evidence (2026-02-09, Cycle 5)
+- `gh issue list --repo sarveshkapre/agentic-writing-ide --state open --limit 20` (pass; empty)
+- `npm run lint:workflows` (pass)
+- `npm run check` (pass)
+- `npx playwright install chromium` (pass)
+- `npm run build && npm run e2e:smoke` (fail; timed out waiting for preview server due to host binding)
+- `npm run e2e:smoke` (pass; after binding preview server to `127.0.0.1`)
+- `npm audit --audit-level=moderate` (fail; remaining moderate advisory requires Vite major upgrade)
+- `gh run watch 21843776310 --exit-status` (pass; CI for `be34cab`)
+- `gh run watch 21843776316 --exit-status` (pass; CodeQL for `be34cab`)
