@@ -154,3 +154,5 @@
 - `curl -sf http://127.0.0.1:4173/ | head` (pass; returned HTML)
 - `gh run watch 21826127286 --exit-status` (pass; CI)
 - `gh run watch 21826127303 --exit-status` (pass; CodeQL)
+- `gh run watch 21826213686 --exit-status` (pass; CI for docs update)
+- `gh run watch 21826213681 --exit-status` (pass; CodeQL for docs update)
