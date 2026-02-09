@@ -72,5 +72,6 @@
 - `npm run check` (pass)
 - `npm run dev -- --host 127.0.0.1 --port 4173` (pass; server started)
 - `curl -sf http://127.0.0.1:4173/ | head` (pass; returned HTML)
+- `curl -sf http://localhost:11434/api/tags` (fail; Ollama not running locally)
 - `gh run watch 21812871398 --exit-status` (pass; CI)
 - `gh run watch 21812871401 --exit-status` (pass; CodeQL)
