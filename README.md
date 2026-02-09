@@ -7,7 +7,7 @@ Runs a draft through a multi-stage pipeline (draft → critique → revise → p
 ## Features
 - Document editor with live markdown preview.
 - Agent pipeline that creates revisions with rationale (optional LLM stub).
-- Branchable revision history with filters and merge (no-conflict copy).
+- Branchable revision history with filters and three-way merge preview/resolution.
 - Inline or side-by-side diffs.
 - Local persistence with JSON import/export.
 - Export to HTML and PDF.

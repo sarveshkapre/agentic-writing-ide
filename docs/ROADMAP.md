@@ -5,7 +5,7 @@
 
 ## Next
 - Real LLM provider integration (bring-your-own-key).
-- True merge with conflict resolution.
+- Smarter merge alignment and conflict UX polish.
 - Template library for common writing formats.
 
 ## Later

@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- Branch merge now uses a three-way preview with conflict detection and selectable resolution (`manual markers`, `prefer current`, `prefer source`) before commit.
+- Added merge regression tests for clean merges, conflict resolution, and merge utility behavior.
+- Branch creation now blocks empty/duplicate names with inline error feedback.
+- Import UX now clears file inputs after each attempt and reports the imported document title on success.
+- CI build job now runs workflow lint (`npm run lint:workflows`) before the full quality gate.
 - CI: fixed invalid `dependency-review` condition in `.github/workflows/ci.yml` (`'pull_request'` string literal), which previously prevented CI jobs from starting.
 - CI: fixed gitleaks push-scan failures by setting `actions/checkout` `fetch-depth: 0` in the `gitleaks` job.
 - CI: upgraded CodeQL action steps from `github/codeql-action@v3` to `@v4` (future deprecation warning remediation).

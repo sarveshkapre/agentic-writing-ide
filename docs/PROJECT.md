@@ -19,5 +19,5 @@
 
 ## Next 3 improvements
 1. Real LLM provider adapter.
-2. Merge with conflict resolution.
+2. E2E smoke coverage for core writing workflows.
 3. Export templates and themes.
