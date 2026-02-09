@@ -7,11 +7,13 @@
 - Gaps found during codebase exploration
 
 ## Candidate Features To Do
+- [ ] P1 (Selected): Add OpenAI-compatible local endpoint adapter (LM Studio) to the LLM pipeline settings (models list + connection test + safe fallback).
+- [ ] P1 (Selected): Add a keyboard shortcut cheat sheet modal (Cmd/Ctrl + /) and link it from the sidebar shortcuts panel.
 - [ ] P2: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
-- [ ] P2: Add keyboard shortcut cheat sheet modal (Cmd/Ctrl + /) and surface `Shift+O` outline shortcut.
+- [ ] P2: Add a focus mode / typewriter mode toggle for distraction-free drafting (CSS-only + keyboard shortcut).
 - [ ] P2: Add export templates/themes for HTML/PDF (simple preset library).
-- [ ] P3: Add optional OpenAI-compatible local server adapter (LM Studio) for users who prefer that API shape.
+- [ ] P3: Add revision labels (named versions) to make milestones easy to find in History search/filter.
 - [ ] P3: Multi-document library (create/switch/rename/delete) with local persistence.
 
 ## Session Scoring (2026-02-09, Cycle 1)
@@ -23,6 +25,19 @@ Selected (1-5 scale; higher is better except risk):
 Not selected this cycle:
 - Playwright E2E smoke: impact 3, effort 4, strategic fit 4, differentiation 1, risk 2, confidence 3.
 - Merge alignment improvements: impact 3, effort 4, strategic fit 4, differentiation 3, risk 3, confidence 2.
+
+## Session Scoring (2026-02-09, Cycle 2)
+Selected (1-5 scale; higher is better except risk):
+- OpenAI-compatible local endpoint adapter (LM Studio): impact 5, effort 3, strategic fit 5, differentiation 3, risk 2, confidence 4.
+- Shortcuts cheat sheet modal: impact 4, effort 2, strategic fit 5, differentiation 2, risk 1, confidence 5.
+
+Not selected this cycle:
+- Playwright E2E smoke: impact 4, effort 4, strategic fit 5, differentiation 1, risk 2, confidence 3.
+- Merge alignment improvements: impact 4, effort 4, strategic fit 5, differentiation 4, risk 3, confidence 2.
+- Focus/typewriter mode: impact 3, effort 3, strategic fit 4, differentiation 3, risk 1, confidence 3.
+- Revision labels: impact 3, effort 3, strategic fit 4, differentiation 2, risk 2, confidence 3.
+- Export themes: impact 3, effort 3, strategic fit 4, differentiation 2, risk 1, confidence 4.
+- Multi-document library: impact 5, effort 5, strategic fit 5, differentiation 3, risk 3, confidence 2.
 
 ## Implemented
 - [x] 2026-02-09: Added canonical autonomous engineering contract at repo root (`AGENTS.md`) and prevented drift by pointing `docs/AGENTS.md` to the canonical contract.

@@ -34,6 +34,64 @@ describe("llmAdapter", () => {
     expect(models).toEqual([]);
   });
 
+  it("lists models for openai-compatible providers", async () => {
+    const settings: LlmSettings = {
+      enabled: true,
+      provider: "openai-compatible",
+      model: "local-model",
+      baseUrl: "http://localhost:1234/v1",
+      apiKey: ""
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: RequestInfo | URL) => {
+        const href = url.toString();
+        if (href.endsWith("/models")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ data: [{ id: "local-model" }, { id: "other" }] })
+          } as Response;
+        }
+        throw new Error(`Unexpected fetch: ${href}`);
+      })
+    );
+
+    const models = await fetchProviderModels(settings);
+    expect(models).toEqual(["local-model", "other"]);
+  });
+
+  it("reports openai-compatible provider as ready when /models succeeds", async () => {
+    const settings: LlmSettings = {
+      enabled: true,
+      provider: "openai-compatible",
+      model: "local-model",
+      baseUrl: "http://localhost:1234/v1",
+      apiKey: ""
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: RequestInfo | URL) => {
+        const href = url.toString();
+        if (href.endsWith("/models")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ data: [{ id: "local-model" }] })
+          } as Response;
+        }
+        throw new Error(`Unexpected fetch: ${href}`);
+      })
+    );
+
+    const health = await testLlmProvider(settings);
+    expect(health.ok).toBe(true);
+    expect(health.message.toLowerCase()).toContain("reachable");
+    expect(health.models).toEqual(["local-model"]);
+  });
+
   it("runs stub stage deterministically", async () => {
     const settings: LlmSettings = {
       enabled: true,
@@ -50,6 +108,59 @@ describe("llmAdapter", () => {
     });
     expect(result.output).toContain("Hello");
     expect(result.rationale.toLowerCase()).toContain("stub");
+  });
+
+  it("parses openai-compatible chat response for output + rationale", async () => {
+    const settings: LlmSettings = {
+      enabled: true,
+      provider: "openai-compatible",
+      model: "local-model",
+      baseUrl: "http://localhost:1234/v1",
+      apiKey: ""
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: RequestInfo | URL) => {
+        const href = url.toString();
+        if (href.endsWith("/chat/completions")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              choices: [
+                {
+                  message: {
+                    content: JSON.stringify({
+                      output: "# Revised\n\nText",
+                      rationale: "Did the thing."
+                    })
+                  }
+                }
+              ]
+            })
+          } as Response;
+        }
+        if (href.endsWith("/models")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ data: [{ id: "local-model" }] })
+          } as Response;
+        }
+        throw new Error(`Unexpected fetch: ${href}`);
+      })
+    );
+
+    const result = await runLlmStage({
+      stage: "revise",
+      input: "# Draft\n\nText",
+      settings,
+      briefSummary: "Keep it short."
+    });
+
+    expect(result.output).toContain("# Revised");
+    expect(result.rationale).toContain("Did the thing.");
   });
 
   it("parses ollama JSON response for output + rationale", async () => {
@@ -116,5 +227,22 @@ describe("llmAdapter", () => {
       })
     ).rejects.toThrow(/model/i);
   });
-});
 
+  it("requires an explicit model for openai-compatible providers", async () => {
+    const settings: LlmSettings = {
+      enabled: true,
+      provider: "openai-compatible",
+      model: "",
+      baseUrl: "http://localhost:1234/v1",
+      apiKey: ""
+    };
+
+    await expect(
+      runLlmStage({
+        stage: "draft",
+        input: "Hello",
+        settings
+      })
+    ).rejects.toThrow(/model/i);
+  });
+});

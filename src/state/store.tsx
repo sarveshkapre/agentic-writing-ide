@@ -15,6 +15,9 @@ import { loadState } from "./persistence";
 const nowIso = () => new Date().toISOString();
 const STAGE_ORDER: StageId[] = ["draft", "critique", "revise", "polish"];
 
+const DEFAULT_OLLAMA_URL = "http://localhost:11434";
+const DEFAULT_OPENAI_COMPAT_URL = "http://localhost:1234/v1";
+
 const createInitialState = (): AppState => {
   const baseRevision: Revision = {
     id: createId(),
@@ -52,7 +55,7 @@ const createInitialState = (): AppState => {
         enabled: false,
         provider: "stub",
         model: "local-stub",
-        baseUrl: "http://localhost:11434",
+        baseUrl: DEFAULT_OLLAMA_URL,
         apiKey: ""
       }
     }
@@ -60,12 +63,29 @@ const createInitialState = (): AppState => {
 };
 
 const normalizeState = (state: AppState): AppState => {
+  const rawProvider = state.settings?.llm?.provider;
+  const provider =
+    rawProvider === "ollama"
+      ? "ollama"
+      : rawProvider === "openai-compatible"
+        ? "openai-compatible"
+        : "stub";
+
+  const baseUrlFallback =
+    provider === "ollama"
+      ? DEFAULT_OLLAMA_URL
+      : provider === "openai-compatible"
+        ? DEFAULT_OPENAI_COMPAT_URL
+        : DEFAULT_OLLAMA_URL;
+
   const settings: Settings = {
     llm: {
       enabled: state.settings?.llm?.enabled ?? false,
-      provider: state.settings?.llm?.provider === "ollama" ? "ollama" : "stub",
-      model: state.settings?.llm?.model ?? "local-stub",
-      baseUrl: state.settings?.llm?.baseUrl ?? "http://localhost:11434",
+      provider,
+      model:
+        state.settings?.llm?.model ??
+        (provider === "stub" ? "local-stub" : ""),
+      baseUrl: state.settings?.llm?.baseUrl ?? baseUrlFallback,
       apiKey: state.settings?.llm?.apiKey ?? ""
     }
   };

@@ -47,7 +47,7 @@ export type AppState = {
 
 export type LlmSettings = {
   enabled: boolean;
-  provider: "stub" | "ollama";
+  provider: "stub" | "ollama" | "openai-compatible";
   model: string;
   baseUrl: string;
   apiKey: string;

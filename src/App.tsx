@@ -619,6 +619,12 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // Avoid stale model lists/test statuses when switching providers.
+    setLlmModels([]);
+    setLlmStatus("Not tested");
+  }, [state.settings.llm.provider, state.settings.llm.baseUrl]);
+
+  useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const isCommand = event.metaKey || event.ctrlKey;
       if (!isCommand) return;
