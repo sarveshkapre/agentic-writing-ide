@@ -1,27 +1,39 @@
 import React, { useCallback, useEffect, useId, useRef } from "react";
 
+export type EditorApi = {
+  jumpTo: (index: number) => void;
+  focus: () => void;
+  getCursor: () => number;
+};
+
 export const Editor: React.FC<{
   value: string;
   onChange: (value: string) => void;
   typewriter?: boolean;
-}> = ({ value, onChange, typewriter = false }) => {
+  onCursorChange?: (index: number) => void;
+  apiRef?: React.MutableRefObject<EditorApi | null>;
+}> = ({ value, onChange, typewriter = false, onCursorChange, apiRef }) => {
   const id = useId();
   const ref = useRef<HTMLTextAreaElement | null>(null);
 
-  const centerCursor = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-
+  const readLineHeight = useCallback((el: HTMLTextAreaElement): number => {
     const style = window.getComputedStyle(el);
     const rawLineHeight = style.lineHeight;
     const rawFontSize = style.fontSize;
     const lineHeightParsed = Number.parseFloat(rawLineHeight);
     const fontSizeParsed = Number.parseFloat(rawFontSize);
-    const lineHeight = Number.isFinite(lineHeightParsed)
+    return Number.isFinite(lineHeightParsed)
       ? lineHeightParsed
       : Number.isFinite(fontSizeParsed)
         ? fontSizeParsed * 1.5
         : 20;
+  }, []);
+
+  const centerCursor = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const lineHeight = readLineHeight(el);
 
     const caret = typeof el.selectionStart === "number" ? el.selectionStart : 0;
     const before = el.value.slice(0, caret);
@@ -35,7 +47,7 @@ export const Editor: React.FC<{
     if (Math.abs(el.scrollTop - next) > lineHeight / 3) {
       el.scrollTop = next;
     }
-  }, []);
+  }, [readLineHeight]);
 
   const scheduleCenter = useCallback(() => {
     if (!typewriter) return;
@@ -51,6 +63,52 @@ export const Editor: React.FC<{
     if (typewriter) scheduleCenter();
   }, [scheduleCenter, typewriter]);
 
+  const reportCursor = useCallback(() => {
+    if (!onCursorChange) return;
+    const el = ref.current;
+    if (!el) return;
+    const caret = typeof el.selectionStart === "number" ? el.selectionStart : 0;
+    onCursorChange(caret);
+  }, [onCursorChange]);
+
+  const jumpTo = useCallback(
+    (index: number) => {
+      const el = ref.current;
+      if (!el) return;
+      const next = Math.max(0, Math.min(index, el.value.length));
+      el.focus();
+      el.selectionStart = next;
+      el.selectionEnd = next;
+
+      // Scroll the target line into view. This keeps jumps usable even without
+      // typewriter mode.
+      const lineHeight = readLineHeight(el);
+      const before = el.value.slice(0, next);
+      const lineIndex = before.split("\n").length - 1;
+      const targetTop = Math.max(0, lineIndex * lineHeight - el.clientHeight / 3);
+      el.scrollTop = targetTop;
+
+      reportCursor();
+      scheduleCenter();
+    },
+    [readLineHeight, reportCursor, scheduleCenter]
+  );
+
+  useEffect(() => {
+    if (!apiRef) return;
+    apiRef.current = {
+      jumpTo,
+      focus: () => ref.current?.focus(),
+      getCursor: () =>
+        typeof ref.current?.selectionStart === "number"
+          ? (ref.current?.selectionStart as number)
+          : 0
+    };
+    return () => {
+      apiRef.current = null;
+    };
+  }, [apiRef, jumpTo]);
+
   return (
     <div className="editor">
       <label className="sr-only" htmlFor={id}>
@@ -64,9 +122,22 @@ export const Editor: React.FC<{
         onChange={(event) => {
           onChange(event.target.value);
           scheduleCenter();
+          if (onCursorChange) {
+            const caret =
+              typeof event.currentTarget.selectionStart === "number"
+                ? event.currentTarget.selectionStart
+                : 0;
+            onCursorChange(caret);
+          }
         }}
-        onKeyUp={scheduleCenter}
-        onClick={scheduleCenter}
+        onKeyUp={() => {
+          scheduleCenter();
+          reportCursor();
+        }}
+        onClick={() => {
+          scheduleCenter();
+          reportCursor();
+        }}
         spellCheck
       />
     </div>

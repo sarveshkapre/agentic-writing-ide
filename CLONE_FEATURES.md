@@ -7,11 +7,16 @@
 - Gaps found during codebase exploration
 
 ## Candidate Features To Do
-- [ ] P2: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
+- [ ] P1: Outline navigator (headings list) with click-to-jump and optional "follow cursor" mode for long drafts.
+- [ ] P1: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
-- [ ] P2: Outline navigator (headings list) with click-to-jump and optional "follow cursor" mode for long drafts.
-- [ ] P3: Document-wide search (working copy + revisions) with jump-to-result and diff context.
+- [ ] P2: Document-wide search (working copy + revisions) with jump-to-result and diff context.
 - [ ] P3: Local comments/annotations (non-destructive) tied to revision ranges/line numbers.
+- [ ] P3: Add stable `data-testid` attributes for key flows (edit/commit/export/import/branch/merge) to support E2E and future automation.
+- [ ] P3: Add Markdown export (`.md`) with frontmatter option (title/label/createdAt) for interoperability.
+- [ ] P3: Add per-document preferences (default export theme, default target word count) with migration-safe persistence.
+- [ ] P3: Performance: memoize expensive diff computations and add a long-document perf smoke test (~50k words).
+- [ ] P3: Add “Quick switch” palette (documents/branches/revisions) with fuzzy search and keyboard-first UX.
 
 ## Session Scoring (2026-02-09, Cycle 1)
 Selected (1-5 scale; higher is better except risk):
@@ -58,7 +63,19 @@ Not selected this cycle:
 - Document-wide search: impact 4, effort 4, strategic fit 4, differentiation 2, risk 2, confidence 2.
 - Local comments/annotations: impact 4, effort 4, strategic fit 4, differentiation 3, risk 3, confidence 2.
 
+## Session Scoring (2026-02-09, Cycle 5)
+Selected (1-5 scale; higher is better except risk):
+- Outline navigator: impact 5, effort 3, strategic fit 5, differentiation 2, risk 2, confidence 4.
+- Playwright E2E smoke: impact 4, effort 4, strategic fit 5, differentiation 1, risk 2, confidence 3.
+
+Not selected this cycle:
+- Improve merge alignment: impact 4, effort 4, strategic fit 5, differentiation 4, risk 3, confidence 2.
+- Document-wide search: impact 4, effort 4, strategic fit 4, differentiation 2, risk 2, confidence 2.
+- Comments/annotations: impact 4, effort 4, strategic fit 4, differentiation 3, risk 3, confidence 2.
+
 ## Implemented
+- [x] 2026-02-09: Added outline navigator (headings list) with click-to-jump and optional "follow cursor" highlighting for long drafts.
+  Evidence: `src/lib/outline.ts`, `src/ui/OutlinePanel.tsx`, `src/ui/Editor.tsx`, `src/App.tsx`, `tests/outline.test.ts`, `npm run check`.
 - [x] 2026-02-09: Added multi-document library (create/switch/rename/delete) with safe migration from v1 single-document storage to v2 library storage.
   Evidence: `src/state/store.tsx`, `src/state/persistence.ts`, `src/state/types.ts`, `src/App.tsx`, `tests/app.smoke.test.tsx`, `npm run check`.
 - [x] 2026-02-09: Cut release `0.2.0` (version bump + changelog section) to keep shipped behavior auditable.
@@ -126,7 +143,7 @@ Not selected this cycle:
 - Market scan (untrusted, 2026-02-09): Baseline writing-app UX expectations we should hit:
   - Distraction-free modes (focus/typewriter) and readable typography are table stakes. Sources: Typora focus mode/typewriter mode. https://typora.io/
   - Export quality matters (PDF/HTML) with theme-able output. Sources: Typora export formats and theme support. https://support.typora.io/Export/
-  - Navigability scales better with an outline-like affordance and quick switches between views. Source: Obsidian core plugins (outline, backlinks, etc.). https://help.obsidian.md/plugins/core-plugins
+  - Navigability scales better with an outline-like affordance. Sources: Typora Outline panel. https://support.typora.io/Outline/ and Google Docs Outline. https://support.google.com/docs/answer/99397
   - Durable revision history and “named versions” make long-form iteration safer. Source: Google Docs version history + named versions. https://support.google.com/docs/answer/190843
 - Market scan (untrusted, 2026-02-09): Additional expectations for long-form writing IDEs:
   - Focus mode and typewriter scrolling are explicit features in dedicated writing apps (iA Writer). https://ia.net/writer

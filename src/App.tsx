@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchProviderModels, runLlmStage, testLlmProvider } from "./agents/llmAdapter";
 import { stages } from "./agents/pipeline";
 import { applyOutlineToContent, buildOutlineFromBrief, summarizeBrief } from "./lib/brief";
@@ -19,10 +19,11 @@ import { useStore } from "./state/useStore";
 import type { ProjectBrief, Revision, StageId } from "./state/types";
 import { BriefPanel } from "./ui/BriefPanel";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
-import { Editor } from "./ui/Editor";
+import { Editor, type EditorApi } from "./ui/Editor";
 import { HistoryPanel } from "./ui/HistoryPanel";
 import { MarkdownPreview } from "./ui/MarkdownPreview";
 import { MetricsPanel } from "./ui/MetricsPanel";
+import { OutlinePanel } from "./ui/OutlinePanel";
 import { PipelinePanel } from "./ui/PipelinePanel";
 import { SettingsPanel } from "./ui/SettingsPanel";
 import { ShortcutsModal } from "./ui/ShortcutsModal";
@@ -91,6 +92,8 @@ export const App: React.FC = () => {
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const editorApiRef = useRef<EditorApi | null>(null);
+  const [cursorIndex, setCursorIndex] = useState(0);
   const [pendingDeleteDocumentId, setPendingDeleteDocumentId] = useState<string | null>(
     null
   );
@@ -1038,6 +1041,8 @@ export const App: React.FC = () => {
                 onChange={(value) =>
                   dispatch({ type: "UPDATE_CONTENT", content: value })
                 }
+                apiRef={editorApiRef}
+                onCursorChange={setCursorIndex}
                 typewriter={typewriterMode}
               />
               <div className="editor-actions">
@@ -1129,6 +1134,11 @@ export const App: React.FC = () => {
               stageLabel={stageLabel(selectedRevision.stage)}
               lastUpdated={lastUpdated}
               isDirty={isDirty}
+            />
+            <OutlinePanel
+              content={workingContent}
+              cursorIndex={cursorIndex}
+              onJump={(index) => editorApiRef.current?.jumpTo(index)}
             />
             <PipelinePanel
               stages={stages}
