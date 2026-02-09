@@ -195,3 +195,5 @@
 - `gh run watch 21835228401 --exit-status` (pass; CodeQL for `3dda922`)
 - `gh run watch 21835300003 --exit-status` (pass; CI for `48db002`)
 - `gh run watch 21835300061 --exit-status` (pass; CodeQL for `48db002`)
+- `gh run watch 21835373525 --exit-status` (pass; CI for `53a363a`)
+- `gh run watch 21835373495 --exit-status` (pass; CodeQL for `53a363a`)
