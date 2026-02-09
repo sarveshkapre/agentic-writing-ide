@@ -100,7 +100,7 @@
   - `src/App.tsx`
   - `tests/app.smoke.test.tsx`
   - `npm test` (pass)
-- Commit: `TBD`
+- Commit: `4d6a4274bfcd597ef8cf05caf0742b11ab8a64fa`
 - Confidence: high
 - Trust label: verified-local
 
