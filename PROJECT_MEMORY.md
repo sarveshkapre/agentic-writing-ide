@@ -1,5 +1,32 @@
 # Project Memory
 
+## Entry 2026-02-09 — Multi-document library (local-first)
+- Decision: Replace single-document state with a document library (create/switch/rename/delete) and migrate persistence from v1 single-document storage to v2 library storage.
+- Why: A writing IDE needs multiple documents (chapters, variants, briefs) to be broadly useful; migration preserves existing users' work while unlocking the library UX.
+- Evidence:
+  - `src/state/types.ts`
+  - `src/state/store.tsx`
+  - `src/state/persistence.ts`
+  - `src/App.tsx`
+  - `tests/app.smoke.test.tsx`
+  - `npm run check` (pass)
+- Commit: `3dda922aa508ac4f49eb9aa6de15c76d0b4ee8aa`
+- Confidence: medium-high
+- Trust label: verified-local
+- Follow-up:
+  - Add a lightweight rename/delete affordance in the document selector itself (and sort documents by last-updated once we track it).
+
+## Entry 2026-02-09 — Cut release 0.2.0
+- Decision: Cut `0.2.0` by moving the long-running Unreleased changelog entries into a versioned section and bumping `package.json` version.
+- Why: Keeps shipped behavior auditable and reduces drift between code and docs as the feature set grows.
+- Evidence:
+  - `CHANGELOG.md`
+  - `package.json`
+  - `npm run check` (pass)
+- Commit: `48db002e8f83c98cedd1f0d9df1a145c61c3270e`
+- Confidence: high
+- Trust label: verified-local
+
 ## Entry 2026-02-09 — Export themes for HTML/PDF + safe title escaping
 - Decision: Add a small preset export theme library (Paper/Classic/Night) for HTML/PDF export and escape the HTML `<title>` to avoid export-time injection.
 - Why: Export quality and styling is a baseline expectation in writing tools; escaping export metadata is a low-effort hardening step.
@@ -160,3 +187,11 @@
 - `gh run watch 21826213681 --exit-status` (pass; CodeQL for docs update)
 - `gh run watch 21826280930 --exit-status` (pass; CI)
 - `gh run watch 21826280931 --exit-status` (pass; CodeQL)
+
+## Verification Evidence (2026-02-09, Cycle 4)
+- `npm run check` (pass)
+- `bash -lc 'npm run dev -- --host 127.0.0.1 --port 4173 >/tmp/agentic-dev.log 2>&1 & pid=$!; sleep 2; curl -sf http://127.0.0.1:4173/ | head -n 5; kill $pid; wait $pid || true'` (pass; server started + returned HTML)
+- `gh run watch 21835228382 --exit-status` (pass; CI for `3dda922`)
+- `gh run watch 21835228401 --exit-status` (pass; CodeQL for `3dda922`)
+- `gh run watch 21835300003 --exit-status` (pass; CI for `48db002`)
+- `gh run watch 21835300061 --exit-status` (pass; CodeQL for `48db002`)
