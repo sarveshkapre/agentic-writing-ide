@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { runLlmStage } from "./agents/llmAdapter";
+import { fetchProviderModels, runLlmStage, testLlmProvider } from "./agents/llmAdapter";
 import { stages } from "./agents/pipeline";
 import { applyOutlineToContent, buildOutlineFromBrief, summarizeBrief } from "./lib/brief";
 import { DiffView } from "./lib/diff";
@@ -85,6 +85,7 @@ export const App: React.FC = () => {
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null);
   const [diffMode, setDiffMode] = useState<"inline" | "side">("inline");
   const [llmStatus, setLlmStatus] = useState("Not tested");
+  const [llmModels, setLlmModels] = useState<string[]>([]);
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
   const [pendingNav, setPendingNav] = useState<
     | { kind: "select-revision"; revisionId: string }
@@ -97,7 +98,6 @@ export const App: React.FC = () => {
   const workingContent = state.workingContent;
   const isDirty = workingContent !== selectedRevision.content;
   const llmEnabled = state.settings.llm.enabled;
-  const llmModel = state.settings.llm.model;
   const currentBranch = doc.branches[doc.currentBranchId];
   const compareRevision = state.compareRevisionId
     ? doc.revisions[state.compareRevisionId]
@@ -273,23 +273,29 @@ export const App: React.FC = () => {
 
       try {
         if (llmEnabled) {
-          const result = await runLlmStage({
-            stage: stageId,
-            input,
-            model: llmModel,
-            briefSummary
-          });
-          const revision: Revision = {
-            id: createId(),
-            parentId,
-            createdAt: nowIso(),
-            author: "agent",
-            content: result.output,
-            rationale: result.rationale,
-            stage: stageId
-          };
-          dispatch({ type: "ADD_REVISION", revision });
-          return;
+          try {
+            const result = await runLlmStage({
+              stage: stageId,
+              input,
+              settings: state.settings.llm,
+              briefSummary
+            });
+            const revision: Revision = {
+              id: createId(),
+              parentId,
+              createdAt: nowIso(),
+              author: "agent",
+              content: result.output,
+              rationale: result.rationale,
+              stage: stageId
+            };
+            dispatch({ type: "ADD_REVISION", revision });
+            return;
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : "LLM provider error.";
+            setLlmStatus(`LLM failed: ${message} (falling back to offline).`);
+          }
         }
 
         const { output, rationale } = stage.run(input);
@@ -313,8 +319,8 @@ export const App: React.FC = () => {
       dispatch,
       isDirty,
       llmEnabled,
-      llmModel,
       selectedRevision.id,
+      state.settings.llm,
       workingContent
     ]
   );
@@ -565,15 +571,28 @@ export const App: React.FC = () => {
     [commitWorkingCopy, dispatch, pendingNav, selectedRevision.content]
   );
 
-  const handleTestStub = async () => {
+  const handleTestLlm = async () => {
     setLlmStatus("Testing...");
-    const result = await runLlmStage({
-      stage: "draft",
-      input: workingContent,
-      model: state.settings.llm.model,
-      briefSummary
-    });
-    setLlmStatus(`Stub ready: ${result.rationale}`);
+    try {
+      const health = await testLlmProvider(state.settings.llm);
+      setLlmStatus(health.ok ? health.message : `Not ready: ${health.message}`);
+      if (health.models) setLlmModels(health.models);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Test failed.";
+      setLlmStatus(`Test failed: ${message}`);
+    }
+  };
+
+  const handleRefreshModels = async () => {
+    setLlmStatus("Refreshing models...");
+    try {
+      const models = await fetchProviderModels(state.settings.llm);
+      setLlmModels(models);
+      setLlmStatus(models.length ? `Loaded ${models.length} models.` : "No models found.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Refresh failed.";
+      setLlmStatus(`Refresh failed: ${message}`);
+    }
   };
 
   useEffect(() => {
@@ -907,8 +926,10 @@ export const App: React.FC = () => {
             onChange={(settings) =>
               dispatch({ type: "UPDATE_LLM_SETTINGS", settings })
             }
-            onTest={handleTestStub}
+            onTest={handleTestLlm}
+            onRefreshModels={handleRefreshModels}
             testStatus={llmStatus}
+            models={llmModels}
           />
           <div className="panel shortcuts">
             <h3>Shortcuts</h3>

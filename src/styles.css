@@ -152,6 +152,12 @@ body {
   gap: 0.4rem;
 }
 
+.row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .branch-controls .error {
   margin: 0;
 }

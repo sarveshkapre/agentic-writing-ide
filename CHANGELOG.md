@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- LLM settings now support an optional local Ollama provider (with model refresh + connection test) in addition to the offline stub.
 - Branch merge now uses a three-way preview with conflict detection and selectable resolution (`manual markers`, `prefer current`, `prefer source`) before commit.
 - Added merge regression tests for clean merges, conflict resolution, and merge utility behavior.
 - Branch creation now blocks empty/duplicate names with inline error feedback.

@@ -47,8 +47,9 @@ export type AppState = {
 
 export type LlmSettings = {
   enabled: boolean;
-  provider: "stub";
+  provider: "stub" | "ollama";
   model: string;
+  baseUrl: string;
   apiKey: string;
 };
 

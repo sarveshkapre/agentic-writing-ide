@@ -52,6 +52,7 @@ const createInitialState = (): AppState => {
         enabled: false,
         provider: "stub",
         model: "local-stub",
+        baseUrl: "http://localhost:11434",
         apiKey: ""
       }
     }
@@ -62,8 +63,9 @@ const normalizeState = (state: AppState): AppState => {
   const settings: Settings = {
     llm: {
       enabled: state.settings?.llm?.enabled ?? false,
-      provider: "stub",
+      provider: state.settings?.llm?.provider === "ollama" ? "ollama" : "stub",
       model: state.settings?.llm?.model ?? "local-stub",
+      baseUrl: state.settings?.llm?.baseUrl ?? "http://localhost:11434",
       apiKey: state.settings?.llm?.apiKey ?? ""
     }
   };
