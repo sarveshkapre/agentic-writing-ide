@@ -4,6 +4,7 @@
 - setup: `npm install`
 - dev: `npm run dev`
 - test: `npm run test`
+- e2e smoke: `npm run e2e:smoke` (first-time: `npx playwright install chromium`)
 - lint: `npm run lint`
 - lint workflows: `npm run lint:workflows`
 - typecheck: `npm run typecheck`
@@ -18,6 +19,6 @@
 - `src/lib`: shared utilities (diff, ids, markdown).
 
 ## Next 3 improvements
-1. Real LLM provider adapter.
-2. E2E smoke coverage for core writing workflows.
-3. Export templates and themes.
+1. Improve three-way merge alignment to reduce false-positive conflicts on large inserts/moves.
+2. Document-wide search (working copy + revisions) with jump-to-result.
+3. Local comments/annotations tied to revision ranges.

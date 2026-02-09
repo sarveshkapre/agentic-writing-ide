@@ -16,7 +16,7 @@
 - [ ] P3: Add Markdown export (`.md`) with frontmatter option (title/label/createdAt) for interoperability.
 - [ ] P3: Add per-document preferences (default export theme, default target word count) with migration-safe persistence.
 - [ ] P3: Performance: memoize expensive diff computations and add a long-document perf smoke test (~50k words).
-- [ ] P3: Add “Quick switch” palette (documents/branches/revisions) with fuzzy search and keyboard-first UX.
+- [ ] P0: Security: keep npm audit clear (dependency bumps + CI guardrails). Current moderate advisory would require Vite major upgrade; track and reassess.
 
 ## Session Scoring (2026-02-09, Cycle 1)
 Selected (1-5 scale; higher is better except risk):
@@ -67,6 +67,7 @@ Not selected this cycle:
 Selected (1-5 scale; higher is better except risk):
 - Outline navigator: impact 5, effort 3, strategic fit 5, differentiation 2, risk 2, confidence 4.
 - Playwright E2E smoke: impact 4, effort 4, strategic fit 5, differentiation 1, risk 2, confidence 3.
+- Dependency security bumps: impact 5, effort 2, strategic fit 5, differentiation 1, risk 2, confidence 4.
 
 Not selected this cycle:
 - Improve merge alignment: impact 4, effort 4, strategic fit 5, differentiation 4, risk 3, confidence 2.
@@ -76,6 +77,10 @@ Not selected this cycle:
 ## Implemented
 - [x] 2026-02-09: Added outline navigator (headings list) with click-to-jump and optional "follow cursor" highlighting for long drafts.
   Evidence: `src/lib/outline.ts`, `src/ui/OutlinePanel.tsx`, `src/ui/Editor.tsx`, `src/App.tsx`, `tests/outline.test.ts`, `npm run check`.
+- [x] 2026-02-09: Added Playwright E2E smoke coverage for import/export + stash navigation, and wired it into CI.
+  Evidence: `scripts/e2e-smoke.mjs`, `.github/workflows/ci.yml`, `package.json`, `npm run e2e:smoke`.
+- [x] 2026-02-09: Security maintenance: bumped `dompurify` + dev tooling deps to address npm audit high/critical advisories; left remaining moderate advisory tracked due to Vite major upgrade requirement.
+  Evidence: `package.json`, `package-lock.json`, `npm audit`.
 - [x] 2026-02-09: Added multi-document library (create/switch/rename/delete) with safe migration from v1 single-document storage to v2 library storage.
   Evidence: `src/state/store.tsx`, `src/state/persistence.ts`, `src/state/types.ts`, `src/App.tsx`, `tests/app.smoke.test.tsx`, `npm run check`.
 - [x] 2026-02-09: Cut release `0.2.0` (version bump + changelog section) to keep shipped behavior auditable.

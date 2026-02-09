@@ -1,7 +1,9 @@
 # Changelog
 
 ## Unreleased
-- (none)
+- Added outline navigator panel (headings list) with click-to-jump and follow-cursor highlighting for long drafts.
+- Added Playwright-based E2E smoke coverage (export + stash navigation) and wired it into CI.
+- Security maintenance: bumped `dompurify` and dev tooling deps to address npm audit high/critical advisories.
 
 ## 0.2.0 (2026-02-09)
 - Added multi-document library (create/switch/rename/delete) with safe migration from single-document local storage and v2 JSON import/export compatibility.

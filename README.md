@@ -25,6 +25,7 @@ npm run dev
 ```bash
 npm run check
 npm run lint:workflows
+npm run e2e:smoke
 ```
 
 ## Keyboard shortcuts
