@@ -75,3 +75,25 @@
 - `curl -sf http://localhost:11434/api/tags` (fail; Ollama not running locally)
 - `gh run watch 21812871398 --exit-status` (pass; CI)
 - `gh run watch 21812871401 --exit-status` (pass; CodeQL)
+
+## Entry 2026-02-09 — OpenAI-compatible local provider (LM Studio)
+- Decision: Add an OpenAI-compatible local endpoint adapter (`/v1/models`, `/v1/chat/completions`) alongside Ollama, with model refresh + connection test + safe offline fallback behavior.
+- Why: Many local LLM runtimes expose an OpenAI-shaped HTTP API; supporting it increases adoption without adding accounts/telemetry/remote keys in the browser.
+- Evidence:
+  - `src/agents/llmAdapter.ts`
+  - `src/ui/SettingsPanel.tsx`
+  - `src/state/store.tsx`
+  - `tests/llmAdapter.test.ts`
+  - `npm test` (pass)
+  - `npm run lint` (pass)
+  - `npm run typecheck` (pass)
+  - `npm run build` (pass)
+- Commit: `42d74e2bdb92d5e437a1e7c0e9a9a8f1f78a71b5`
+- Confidence: medium-high
+- Trust label: verified-local
+
+## Verification Evidence (2026-02-09, Cycle 2)
+- `npm test --silent` (pass; 23 tests)
+- `npm run lint` (pass)
+- `npm run typecheck` (pass)
+- `npm run build` (pass)
