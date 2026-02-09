@@ -30,6 +30,8 @@ npm run lint:workflows
 - Cmd/Ctrl + Shift + E: export JSON
 - Cmd/Ctrl + Shift + H: export HTML
 - Cmd/Ctrl + Shift + P: print/PDF
+- Cmd/Ctrl + Shift + O: generate outline
+- Cmd/Ctrl + /: show shortcuts
 
 ## Docker
 ```bash

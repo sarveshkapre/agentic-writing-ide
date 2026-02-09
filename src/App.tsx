@@ -25,6 +25,7 @@ import { MarkdownPreview } from "./ui/MarkdownPreview";
 import { MetricsPanel } from "./ui/MetricsPanel";
 import { PipelinePanel } from "./ui/PipelinePanel";
 import { SettingsPanel } from "./ui/SettingsPanel";
+import { ShortcutsModal } from "./ui/ShortcutsModal";
 import { ToastStack, type Toast, type ToastKind } from "./ui/ToastStack";
 import "./styles.css";
 
@@ -89,6 +90,7 @@ export const App: React.FC = () => {
   const [llmModels, setLlmModels] = useState<string[]>([]);
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [pendingNav, setPendingNav] = useState<
     | { kind: "select-revision"; revisionId: string }
     | { kind: "switch-branch"; branchId: string }
@@ -665,6 +667,10 @@ export const App: React.FC = () => {
         event.preventDefault();
         handleGenerateOutline();
       }
+      if (event.key === "/" || event.key === "?") {
+        event.preventDefault();
+        setShowShortcuts(true);
+      }
     };
 
     window.addEventListener("keydown", handler);
@@ -681,6 +687,9 @@ export const App: React.FC = () => {
   return (
     <div className="app">
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
+      {showShortcuts ? (
+        <ShortcutsModal onClose={() => setShowShortcuts(false)} />
+      ) : null}
       <header className="topbar">
         <div>
           <p className="eyebrow">Agentic Writing IDE</p>
@@ -969,6 +978,15 @@ export const App: React.FC = () => {
             <p className="muted">Cmd/Ctrl + Shift + H: export HTML</p>
             <p className="muted">Cmd/Ctrl + Shift + P: print/PDF</p>
             <p className="muted">Cmd/Ctrl + Shift + O: generate outline</p>
+            <div className="row">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setShowShortcuts(true)}
+              >
+                View all (Cmd/Ctrl + /)
+              </button>
+            </div>
           </div>
         </aside>
       </main>

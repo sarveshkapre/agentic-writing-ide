@@ -7,8 +7,6 @@
 - Gaps found during codebase exploration
 
 ## Candidate Features To Do
-- [ ] P1 (Selected): Add OpenAI-compatible local endpoint adapter (LM Studio) to the LLM pipeline settings (models list + connection test + safe fallback).
-- [ ] P1 (Selected): Add a keyboard shortcut cheat sheet modal (Cmd/Ctrl + /) and link it from the sidebar shortcuts panel.
 - [ ] P2: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
 - [ ] P2: Add a focus mode / typewriter mode toggle for distraction-free drafting (CSS-only + keyboard shortcut).
@@ -40,6 +38,10 @@ Not selected this cycle:
 - Multi-document library: impact 5, effort 5, strategic fit 5, differentiation 3, risk 3, confidence 2.
 
 ## Implemented
+- [x] 2026-02-09: Added OpenAI-compatible local endpoint adapter (LM Studio) to the LLM pipeline settings, including model refresh and connection tests.
+  Evidence: `src/agents/llmAdapter.ts`, `src/ui/SettingsPanel.tsx`, `tests/llmAdapter.test.ts`, `npm test`.
+- [x] 2026-02-09: Added keyboard shortcut cheat sheet modal (Cmd/Ctrl + /) and a sidebar entry-point.
+  Evidence: `src/ui/ShortcutsModal.tsx`, `src/App.tsx`, `tests/app.smoke.test.tsx`, `npm test`.
 - [x] 2026-02-09: Added canonical autonomous engineering contract at repo root (`AGENTS.md`) and prevented drift by pointing `docs/AGENTS.md` to the canonical contract.
   Evidence: `AGENTS.md`, `docs/AGENTS.md`.
 - [x] 2026-02-09: Added optional local Ollama LLM provider (with model refresh + connection test) and safe offline fallback when provider fails.

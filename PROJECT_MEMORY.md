@@ -92,6 +92,18 @@
 - Confidence: medium-high
 - Trust label: verified-local
 
+## Entry 2026-02-09 — Shortcut Cheat Sheet Modal
+- Decision: Add a keyboard shortcut cheat sheet modal (Cmd/Ctrl + `/`) with an in-UI entry point.
+- Why: Power users expect discoverable shortcuts; a modal makes the keyboard workflow self-teaching without cluttering the main UI.
+- Evidence:
+  - `src/ui/ShortcutsModal.tsx`
+  - `src/App.tsx`
+  - `tests/app.smoke.test.tsx`
+  - `npm test` (pass)
+- Commit: `TBD`
+- Confidence: high
+- Trust label: verified-local
+
 ## Verification Evidence (2026-02-09, Cycle 2)
 - `npm test --silent` (pass; 23 tests)
 - `npm run lint` (pass)

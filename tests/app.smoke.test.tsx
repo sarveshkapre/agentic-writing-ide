@@ -250,4 +250,20 @@ describe("App", () => {
     expect(editor.value).toContain("Feature branch line");
     expect(editor.value).not.toContain("<<<<<<<");
   });
+
+  it("shows keyboard shortcut cheat sheet modal", () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /view all/i }));
+    expect(
+      screen.getByRole("heading", { name: /keyboard shortcuts/i })
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /close/i }));
+    expect(screen.queryByText(/keyboard shortcuts/i)).not.toBeInTheDocument();
+  });
 });
