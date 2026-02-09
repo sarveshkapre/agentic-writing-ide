@@ -150,9 +150,13 @@
 
 ## Verification Evidence (2026-02-09, Cycle 3)
 - `npm run check` (pass)
+- `npm run lint:workflows` (pass)
+- `npm test --silent` (pass)
 - `npm run dev -- --host 127.0.0.1 --port 4173` (pass; server started)
 - `curl -sf http://127.0.0.1:4173/ | head` (pass; returned HTML)
 - `gh run watch 21826127286 --exit-status` (pass; CI)
 - `gh run watch 21826127303 --exit-status` (pass; CodeQL)
 - `gh run watch 21826213686 --exit-status` (pass; CI for docs update)
 - `gh run watch 21826213681 --exit-status` (pass; CodeQL for docs update)
+- `gh run watch 21826280930 --exit-status` (pass; CI)
+- `gh run watch 21826280931 --exit-status` (pass; CodeQL)
