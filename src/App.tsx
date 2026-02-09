@@ -25,6 +25,7 @@ import { MarkdownPreview } from "./ui/MarkdownPreview";
 import { MetricsPanel } from "./ui/MetricsPanel";
 import { PipelinePanel } from "./ui/PipelinePanel";
 import { SettingsPanel } from "./ui/SettingsPanel";
+import { ToastStack, type Toast, type ToastKind } from "./ui/ToastStack";
 import "./styles.css";
 
 const nowIso = () => new Date().toISOString();
@@ -87,6 +88,7 @@ export const App: React.FC = () => {
   const [llmStatus, setLlmStatus] = useState("Not tested");
   const [llmModels, setLlmModels] = useState<string[]>([]);
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
   const [pendingNav, setPendingNav] = useState<
     | { kind: "select-revision"; revisionId: string }
     | { kind: "switch-branch"; branchId: string }
@@ -121,6 +123,19 @@ export const App: React.FC = () => {
     }, 200);
     return () => clearTimeout(timeout);
   }, [state]);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const pushToast = useCallback(
+    (kind: ToastKind, message: string) => {
+      const id = createId();
+      setToasts((prev) => [...prev, { id, kind, message }]);
+      window.setTimeout(() => dismissToast(id), 6000);
+    },
+    [dismissToast]
+  );
 
   const branchOptions = useMemo(
     () => Object.values(doc.branches),
@@ -295,6 +310,7 @@ export const App: React.FC = () => {
             const message =
               error instanceof Error ? error.message : "LLM provider error.";
             setLlmStatus(`LLM failed: ${message} (falling back to offline).`);
+            pushToast("error", `LLM failed: ${message}`);
           }
         }
 
@@ -321,6 +337,7 @@ export const App: React.FC = () => {
       llmEnabled,
       selectedRevision.id,
       state.settings.llm,
+      pushToast,
       workingContent
     ]
   );
@@ -356,6 +373,7 @@ export const App: React.FC = () => {
       name: trimmed,
       fromRevisionId
     });
+    pushToast("success", `Created branch "${trimmed}".`);
     setBranchName("");
     setBranchError("");
     setMergePreview(null);
@@ -364,6 +382,7 @@ export const App: React.FC = () => {
     branchOptions,
     commitWorkingCopy,
     dispatch,
+    pushToast,
     selectedRevision.id
   ]);
 
@@ -471,7 +490,7 @@ export const App: React.FC = () => {
     if (!sourceHead) return;
 
     if (currentBranch.headRevisionId !== mergePreview.targetHeadId) {
-      setSaveStatus("Merge preview is stale. Re-run preview.");
+      pushToast("error", "Merge preview is stale. Re-run preview.");
       return;
     }
 
@@ -491,29 +510,33 @@ export const App: React.FC = () => {
     };
     dispatch({ type: "ADD_REVISION", revision });
     setMergePreview(null);
-    setSaveStatus(
+    pushToast(
+      mergePreview.conflictCount > 0 ? "info" : "success",
       mergePreview.conflictCount > 0
-        ? `Merged with ${mergePreview.conflictCount} resolved conflicts`
-        : "Merge completed"
+        ? `Merge completed (${mergePreview.conflictCount} conflicts resolved).`
+        : "Merge completed."
     );
-  }, [currentBranch.headRevisionId, dispatch, doc.revisions, mergePreview]);
+  }, [currentBranch.headRevisionId, dispatch, doc.revisions, mergePreview, pushToast]);
 
   const handleExport = useCallback(() => {
     const data = exportState(state);
     downloadFile("agentic-writing-ide.json", data, "application/json");
-  }, [state]);
+    pushToast("success", "Exported JSON.");
+  }, [pushToast, state]);
 
   const handleExportHtml = useCallback(() => {
     const html = renderMarkdown(workingContent);
     const docHtml = wrapHtml(doc.title, html);
     downloadFile("agentic-draft.html", docHtml, "text/html");
-  }, [doc.title, workingContent]);
+    pushToast("success", "Exported HTML.");
+  }, [doc.title, pushToast, workingContent]);
 
   const handleExportPdf = useCallback(() => {
     const html = renderMarkdown(workingContent);
     const docHtml = wrapHtml(doc.title, html);
     printHtml(docHtml);
-  }, [doc.title, workingContent]);
+    pushToast("info", "Print dialog opened.");
+  }, [doc.title, pushToast, workingContent]);
 
   const handleImport = (file: File | null, input: HTMLInputElement | null) => {
     if (!file) {
@@ -525,12 +548,12 @@ export const App: React.FC = () => {
         const imported = importState(text);
         dispatch({ type: "RESET", state: imported });
         const importedTitle = imported.document?.title || "Untitled Draft";
-        setSaveStatus(`Imported "${importedTitle}" at ${new Date().toLocaleTimeString()}`);
+        pushToast("success", `Imported "${importedTitle}".`);
         setMergePreview(null);
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "Import failed.";
-        setSaveStatus(`Import failed: ${message}`);
+        pushToast("error", `Import failed: ${message}`);
       })
       .finally(() => {
         if (input) input.value = "";
@@ -651,6 +674,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="app">
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
       <header className="topbar">
         <div>
           <p className="eyebrow">Agentic Writing IDE</p>
