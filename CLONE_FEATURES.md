@@ -14,6 +14,16 @@
 - [ ] P3: Add optional OpenAI-compatible local server adapter (LM Studio) for users who prefer that API shape.
 - [ ] P3: Multi-document library (create/switch/rename/delete) with local persistence.
 
+## Session Scoring (2026-02-09, Cycle 1)
+Selected (1-5 scale; higher is better except risk):
+- Ollama local LLM provider: impact 5, effort 3, strategic fit 5, differentiation 4, risk 2, confidence 4.
+- Toast notifications: impact 4, effort 2, strategic fit 5, differentiation 2, risk 1, confidence 5.
+- Canonical `AGENTS.md` contract tracked: impact 3, effort 1, strategic fit 5, differentiation 1, risk 1, confidence 5.
+
+Not selected this cycle:
+- Playwright E2E smoke: impact 3, effort 4, strategic fit 4, differentiation 1, risk 2, confidence 3.
+- Merge alignment improvements: impact 3, effort 4, strategic fit 4, differentiation 3, risk 3, confidence 2.
+
 ## Implemented
 - [x] 2026-02-09: Added canonical autonomous engineering contract at repo root (`AGENTS.md`) and prevented drift by pointing `docs/AGENTS.md` to the canonical contract.
   Evidence: `AGENTS.md`, `docs/AGENTS.md`.
