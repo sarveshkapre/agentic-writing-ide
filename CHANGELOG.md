@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- (none)
+
+## 0.2.0 (2026-02-09)
+- Added multi-document library (create/switch/rename/delete) with safe migration from single-document local storage and v2 JSON import/export compatibility.
 - Added distraction-free focus mode and typewriter mode toggles (with keyboard shortcuts).
 - Added revision labels (named versions) and a History filter for labeled-only milestones.
 - HTML/PDF export now supports selectable export themes (Paper/Classic/Night).

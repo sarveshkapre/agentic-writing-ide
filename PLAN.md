@@ -23,6 +23,7 @@ Local-first writing IDE that turns a draft into stronger iterations (draft → c
 - More: see `docs/PROJECT.md`
 
 ## Shipped (latest)
+- 2026-02-09: Multi-document library (create/switch/rename/delete) with local persistence migration and v2 JSON import/export compatibility.
 - 2026-02-09: Added focus mode + typewriter mode, revision labels (named versions) with History filtering, and selectable export themes for HTML/PDF.
 - 2026-02-09: Three-way merge preview with conflict resolution modes (`manual`, `prefer current`, `prefer source`) + merge utility tests + branch-name validation + CI workflow lint in build job.
 - 2026-02-08: CI workflow parsing fix + revision-scoped draft stash with `Stash & continue` navigation + hardened JSON import errors + workflow lint command.

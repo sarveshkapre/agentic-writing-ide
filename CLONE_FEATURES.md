@@ -9,7 +9,9 @@
 ## Candidate Features To Do
 - [ ] P2: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
-- [ ] P3: Multi-document library (create/switch/rename/delete) with local persistence.
+- [ ] P2: Outline navigator (headings list) with click-to-jump and optional "follow cursor" mode for long drafts.
+- [ ] P3: Document-wide search (working copy + revisions) with jump-to-result and diff context.
+- [ ] P3: Local comments/annotations (non-destructive) tied to revision ranges/line numbers.
 
 ## Session Scoring (2026-02-09, Cycle 1)
 Selected (1-5 scale; higher is better except risk):
@@ -44,7 +46,23 @@ Not selected this cycle:
 - Playwright E2E smoke: impact 4, effort 4, strategic fit 5, differentiation 1, risk 2, confidence 3.
 - Merge alignment improvements: impact 4, effort 4, strategic fit 5, differentiation 4, risk 3, confidence 2.
 
+## Session Scoring (2026-02-09, Cycle 4)
+Selected (1-5 scale; higher is better except risk):
+- Multi-document library: impact 5, effort 4, strategic fit 5, differentiation 3, risk 3, confidence 3.
+- Cut release `0.2.0`: impact 3, effort 1, strategic fit 4, differentiation 1, risk 1, confidence 5.
+
+Not selected this cycle:
+- Playwright E2E smoke: impact 4, effort 4, strategic fit 5, differentiation 1, risk 2, confidence 3.
+- Merge alignment improvements: impact 4, effort 4, strategic fit 5, differentiation 4, risk 3, confidence 2.
+- Outline navigator: impact 4, effort 3, strategic fit 5, differentiation 2, risk 2, confidence 3.
+- Document-wide search: impact 4, effort 4, strategic fit 4, differentiation 2, risk 2, confidence 2.
+- Local comments/annotations: impact 4, effort 4, strategic fit 4, differentiation 3, risk 3, confidence 2.
+
 ## Implemented
+- [x] 2026-02-09: Added multi-document library (create/switch/rename/delete) with safe migration from v1 single-document storage to v2 library storage.
+  Evidence: `src/state/store.tsx`, `src/state/persistence.ts`, `src/state/types.ts`, `src/App.tsx`, `tests/app.smoke.test.tsx`, `npm run check`.
+- [x] 2026-02-09: Cut release `0.2.0` (version bump + changelog section) to keep shipped behavior auditable.
+  Evidence: `package.json`, `CHANGELOG.md`, `npm run check`.
 - [x] 2026-02-09: Added distraction-free focus mode + typewriter mode (toggles + keyboard shortcuts) and persisted UI preferences.
   Evidence: `src/App.tsx`, `src/ui/Editor.tsx`, `src/state/store.tsx`, `src/styles.css`, `tests/app.smoke.test.tsx`, `npm run check`.
 - [x] 2026-02-09: Added revision labels (named versions) plus History filter/search support for labeled milestones.
