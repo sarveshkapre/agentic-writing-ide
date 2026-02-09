@@ -50,6 +50,45 @@ describe("App", () => {
     expect(editor.value).toBe(initialValue);
   });
 
+  it("supports multiple documents with isolated histories", () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    const docSelect = screen.getByLabelText(/current document/i) as HTMLSelectElement;
+    const docTitle = screen.getByRole("textbox", { name: /document title/i });
+    const editor = screen.getByRole("textbox", {
+      name: /markdown editor/i
+    }) as HTMLTextAreaElement;
+
+    fireEvent.change(docTitle, { target: { value: "Doc A" } });
+
+    const docALine = "This is only in Doc A.";
+    fireEvent.change(editor, { target: { value: `${editor.value}\n\n${docALine}` } });
+    fireEvent.click(screen.getByRole("button", { name: /commit changes/i }));
+
+    const initialDocId = docSelect.value;
+    fireEvent.click(screen.getByRole("button", { name: /^new$/i }));
+
+    expect(docSelect.value).not.toBe(initialDocId);
+    expect(docTitle).toHaveValue("Untitled Draft");
+    expect(editor.value).not.toContain(docALine);
+
+    fireEvent.change(docTitle, { target: { value: "Doc B" } });
+
+    const docAOptionValue = Array.from(docSelect.options).find(
+      (option) => option.text === "Doc A"
+    )?.value;
+    expect(docAOptionValue).toBeTruthy();
+    if (!docAOptionValue) return;
+
+    fireEvent.change(docSelect, { target: { value: docAOptionValue } });
+    expect(docTitle).toHaveValue("Doc A");
+    expect(editor.value).toContain(docALine);
+  });
+
   it("lets you pin revisions and filter to pinned only", () => {
     render(
       <StoreProvider>

@@ -91,23 +91,28 @@ export const App: React.FC = () => {
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [pendingDeleteDocumentId, setPendingDeleteDocumentId] = useState<string | null>(
+    null
+  );
   const [pendingNav, setPendingNav] = useState<
     | { kind: "select-revision"; revisionId: string }
     | { kind: "switch-branch"; branchId: string }
+    | { kind: "switch-document"; documentId: string }
     | null
   >(null);
 
-  const doc = state.document;
-  const selectedRevision = doc.revisions[state.selectedRevisionId];
-  const workingContent = state.workingContent;
+  const doc = state.documents[state.currentDocumentId];
+  const session = state.sessions[state.currentDocumentId];
+  const selectedRevision = doc.revisions[session.selectedRevisionId];
+  const workingContent = session.workingContent;
   const isDirty = workingContent !== selectedRevision.content;
   const llmEnabled = state.settings.llm.enabled;
   const focusMode = state.settings.ui.focusMode;
   const typewriterMode = state.settings.ui.typewriterMode;
   const exportThemeId = state.settings.ui.exportThemeId;
   const currentBranch = doc.branches[doc.currentBranchId];
-  const compareRevision = state.compareRevisionId
-    ? doc.revisions[state.compareRevisionId]
+  const compareRevision = session.compareRevisionId
+    ? doc.revisions[session.compareRevisionId]
     : null;
   const brief = doc.brief;
   const briefSummary = useMemo(() => summarizeBrief(brief), [brief]);
@@ -403,6 +408,58 @@ export const App: React.FC = () => {
     [dispatch, isDirty]
   );
 
+  const documentOptions = useMemo(() => Object.values(state.documents), [state.documents]);
+
+  const handleSwitchDocument = useCallback(
+    (documentId: string) => {
+      if (documentId === state.currentDocumentId) return;
+      if (isDirty) {
+        setPendingNav({ kind: "switch-document", documentId });
+        return;
+      }
+      setMergePreview(null);
+      setBranchName("");
+      setBranchError("");
+      setMergeSourceId("");
+      dispatch({ type: "SWITCH_DOCUMENT", documentId });
+    },
+    [dispatch, isDirty, state.currentDocumentId]
+  );
+
+  const handleCreateDocument = useCallback(() => {
+    if (isDirty) {
+      setPendingNav({ kind: "switch-document", documentId: "__create__" });
+      return;
+    }
+    setMergePreview(null);
+    setBranchName("");
+    setBranchError("");
+    setMergeSourceId("");
+    dispatch({ type: "CREATE_DOCUMENT" });
+    pushToast("success", "Created new document.");
+  }, [dispatch, isDirty, pushToast]);
+
+  const handleDeleteCurrentDocument = useCallback(() => {
+    if (Object.keys(state.documents).length <= 1) {
+      pushToast("info", "Cannot delete the last document.");
+      return;
+    }
+    setPendingDeleteDocumentId(state.currentDocumentId);
+  }, [pushToast, state.currentDocumentId, state.documents]);
+
+  const confirmDeleteDocument = useCallback(() => {
+    const id = pendingDeleteDocumentId;
+    if (!id) return;
+    if (Object.keys(state.documents).length <= 1) return;
+    dispatch({ type: "DELETE_DOCUMENT", documentId: id });
+    setPendingDeleteDocumentId(null);
+    setMergePreview(null);
+    setBranchName("");
+    setBranchError("");
+    setMergeSourceId("");
+    pushToast("info", "Deleted document.");
+  }, [dispatch, pendingDeleteDocumentId, pushToast, state.documents]);
+
   const handlePreviewMerge = useCallback(() => {
     const source = mergeOptions.find((branch) => branch.id === mergeSourceId);
     if (!source) return;
@@ -552,7 +609,36 @@ export const App: React.FC = () => {
       .then((text) => {
         const imported = importState(text);
         dispatch({ type: "RESET", state: imported });
-        const importedTitle = imported.document?.title || "Untitled Draft";
+        let importedTitle = "Untitled Draft";
+        if (
+          imported &&
+          typeof imported === "object" &&
+          "documents" in imported &&
+          "currentDocumentId" in imported
+        ) {
+          const anyImported = imported as Record<string, unknown>;
+          const documents = anyImported.documents as Record<string, unknown> | undefined;
+          const currentDocumentId = anyImported.currentDocumentId;
+          const docRaw =
+            documents && typeof currentDocumentId === "string"
+              ? documents[currentDocumentId]
+              : null;
+          if (docRaw && typeof docRaw === "object" && "title" in (docRaw as Record<string, unknown>)) {
+            const titleRaw = (docRaw as Record<string, unknown>).title;
+            if (typeof titleRaw === "string" && titleRaw.trim()) {
+              importedTitle = titleRaw.trim();
+            }
+          }
+        } else if (imported && typeof imported === "object" && "document" in imported) {
+          const anyImported = imported as Record<string, unknown>;
+          const docRaw = anyImported.document;
+          if (docRaw && typeof docRaw === "object" && "title" in (docRaw as Record<string, unknown>)) {
+            const titleRaw = (docRaw as Record<string, unknown>).title;
+            if (typeof titleRaw === "string" && titleRaw.trim()) {
+              importedTitle = titleRaw.trim();
+            }
+          }
+        }
         pushToast("success", `Imported "${importedTitle}".`);
         setMergePreview(null);
       })
@@ -589,14 +675,21 @@ export const App: React.FC = () => {
 
       if (next.kind === "select-revision") {
         dispatch({ type: "SELECT_REVISION", revisionId: next.revisionId });
-      } else {
+      } else if (next.kind === "switch-branch") {
         dispatch({ type: "SWITCH_BRANCH", branchId: next.branchId });
+      } else {
+        if (next.documentId === "__create__") {
+          dispatch({ type: "CREATE_DOCUMENT" });
+          pushToast("success", "Created new document.");
+        } else {
+          dispatch({ type: "SWITCH_DOCUMENT", documentId: next.documentId });
+        }
       }
 
       setMergePreview(null);
       setPendingNav(null);
     },
-    [commitWorkingCopy, dispatch, pendingNav, selectedRevision.content]
+    [commitWorkingCopy, dispatch, pendingNav, pushToast, selectedRevision.content]
   );
 
   const handleTestLlm = async () => {
@@ -768,6 +861,33 @@ export const App: React.FC = () => {
         <section className="workspace">
           <div className="workspace-header">
             <div>
+              <div className="row">
+                <label className="field">
+                  <span>Document</span>
+                  <select
+                    aria-label="Current document"
+                    value={state.currentDocumentId}
+                    onChange={(event) => handleSwitchDocument(event.target.value)}
+                  >
+                    {documentOptions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="ghost" onClick={handleCreateDocument}>
+                  New
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={handleDeleteCurrentDocument}
+                  disabled={Object.keys(state.documents).length <= 1}
+                >
+                  Delete
+                </button>
+              </div>
               <label className="field">
                 <span>Document title</span>
                 <input
@@ -1020,7 +1140,7 @@ export const App: React.FC = () => {
               branch={currentBranch}
               revisions={doc.revisions}
               selectedId={selectedRevision.id}
-              compareId={state.compareRevisionId}
+              compareId={session.compareRevisionId}
               stages={stages.map((stage) => stage.id)}
               onSelect={requestSelectRevision}
               onCompare={(id) =>
@@ -1092,6 +1212,27 @@ export const App: React.FC = () => {
               label: "Cancel",
               variant: "ghost",
               onSelect: () => setPendingNav(null)
+            }
+          ]}
+        />
+      ) : null}
+
+      {pendingDeleteDocumentId ? (
+        <ConfirmDialog
+          title="Delete document?"
+          description="This will remove the document and its revision history from local storage."
+          onClose={() => setPendingDeleteDocumentId(null)}
+          actions={[
+            {
+              id: "delete",
+              label: "Delete",
+              onSelect: confirmDeleteDocument
+            },
+            {
+              id: "cancel",
+              label: "Cancel",
+              variant: "ghost",
+              onSelect: () => setPendingDeleteDocumentId(null)
             }
           ]}
         />

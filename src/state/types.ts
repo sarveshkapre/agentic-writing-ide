@@ -37,12 +37,18 @@ export type DocumentModel = {
   revisions: Record<string, Revision>;
 };
 
-export type AppState = {
-  document: DocumentModel;
+export type DocumentSession = {
   selectedRevisionId: string;
   compareRevisionId: string | null;
   workingContent: string;
   draftStashByRevisionId: Record<string, string>;
+};
+
+export type AppState = {
+  version: 2;
+  documents: Record<string, DocumentModel>;
+  currentDocumentId: string;
+  sessions: Record<string, DocumentSession>;
   settings: Settings;
 };
 

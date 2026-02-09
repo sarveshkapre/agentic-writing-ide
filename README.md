@@ -9,6 +9,7 @@ Runs a draft through a multi-stage pipeline (draft → critique → revise → p
 - Agent pipeline that creates revisions with rationale (optional local LLM via Ollama, or stub).
 - Branchable revision history with filters and three-way merge preview/resolution.
 - Inline or side-by-side diffs.
+- Multi-document library (create/switch/rename/delete) with local persistence.
 - Revision labels (named versions) for milestones and filtering.
 - Focus mode + typewriter mode toggles for distraction-free drafting.
 - Local persistence with JSON import/export.
