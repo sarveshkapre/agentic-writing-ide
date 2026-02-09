@@ -152,6 +152,10 @@ body {
   gap: 0.4rem;
 }
 
+.branch-controls .error {
+  margin: 0;
+}
+
 button {
   border: none;
   font-family: inherit;
@@ -352,6 +356,16 @@ button:disabled {
 
 .panel-header .tag {
   margin-top: 0.2rem;
+}
+
+.merge-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.merge-preview .field {
+  margin-top: 0.6rem;
 }
 
 @keyframes rise {
@@ -649,6 +663,10 @@ button:disabled {
 .muted {
   color: var(--ink-soft);
   font-size: 0.85rem;
+}
+
+.muted.error {
+  color: #b54558;
 }
 
 .muted.empty {

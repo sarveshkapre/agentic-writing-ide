@@ -21,6 +21,9 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Lint workflows
+        run: npm run lint:workflows
+
       - name: Check
         run: npm run check
 

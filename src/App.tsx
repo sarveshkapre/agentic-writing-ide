@@ -6,6 +6,11 @@ import { DiffView } from "./lib/diff";
 import { wrapHtml } from "./lib/exportDoc";
 import { createId } from "./lib/id";
 import { renderMarkdown } from "./lib/markdown";
+import {
+  findCommonAncestorRevisionId,
+  mergeThreeWay,
+  type MergeResolution
+} from "./lib/merge";
 import { countWords, formatReadingTime } from "./lib/metrics";
 import { printHtml } from "./lib/print";
 import { getTemplateById, templates } from "./lib/templates";
@@ -50,11 +55,34 @@ const readFileAsText = (file: File): Promise<string> => {
   });
 };
 
+type MergePreview = {
+  sourceBranchId: string;
+  sourceBranchName: string;
+  sourceStage: StageId;
+  targetHeadId: string;
+  sourceHeadId: string;
+  baseRevisionId: string | null;
+  baseContent: string;
+  targetContent: string;
+  sourceContent: string;
+  resolution: MergeResolution;
+  mergedContent: string;
+  conflictCount: number;
+};
+
+const resolutionLabel: Record<MergeResolution, string> = {
+  manual: "manual conflict markers",
+  "prefer-target": "prefer current branch",
+  "prefer-source": "prefer source branch"
+};
+
 export const App: React.FC = () => {
   const { state, dispatch } = useStore();
   const [saveStatus, setSaveStatus] = useState("Idle");
   const [branchName, setBranchName] = useState("");
+  const [branchError, setBranchError] = useState("");
   const [mergeSourceId, setMergeSourceId] = useState("");
+  const [mergePreview, setMergePreview] = useState<MergePreview | null>(null);
   const [diffMode, setDiffMode] = useState<"inline" | "side">("inline");
   const [llmStatus, setLlmStatus] = useState("Not tested");
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
@@ -102,6 +130,46 @@ export const App: React.FC = () => {
   const mergeOptions = useMemo(
     () => branchOptions.filter((branch) => branch.id !== currentBranch.id),
     [branchOptions, currentBranch.id]
+  );
+
+  const buildMergePreview = useCallback(
+    ({
+      sourceBranchId,
+      sourceBranchName,
+      sourceStage,
+      targetHeadId,
+      sourceHeadId,
+      baseRevisionId,
+      baseContent,
+      targetContent,
+      sourceContent,
+      resolution
+    }: Omit<MergePreview, "mergedContent" | "conflictCount">): MergePreview => {
+      const merged = mergeThreeWay({
+        base: baseContent,
+        target: targetContent,
+        source: sourceContent,
+        targetLabel: currentBranch.name,
+        sourceLabel: sourceBranchName,
+        resolution
+      });
+
+      return {
+        sourceBranchId,
+        sourceBranchName,
+        sourceStage,
+        targetHeadId,
+        sourceHeadId,
+        baseRevisionId,
+        baseContent,
+        targetContent,
+        sourceContent,
+        resolution,
+        mergedContent: merged.content,
+        conflictCount: merged.conflicts.length
+      };
+    },
+    [currentBranch.name]
   );
 
   const commitWorkingCopy = useCallback(
@@ -260,9 +328,21 @@ export const App: React.FC = () => {
     dispatch({ type: "UPDATE_CONTENT", content: selectedRevision.content });
   }, [dispatch, isDirty, selectedRevision.content]);
 
-  const handleCreateBranch = () => {
+  const handleCreateBranch = useCallback(() => {
     const trimmed = branchName.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setBranchError("Enter a branch name.");
+      return;
+    }
+
+    const duplicate = branchOptions.some(
+      (branch) => branch.name.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (duplicate) {
+      setBranchError("Branch name already exists.");
+      return;
+    }
+
     const fromRevisionId =
       commitWorkingCopy("Auto-commit before branch") ?? selectedRevision.id;
     dispatch({
@@ -271,7 +351,15 @@ export const App: React.FC = () => {
       fromRevisionId
     });
     setBranchName("");
-  };
+    setBranchError("");
+    setMergePreview(null);
+  }, [
+    branchName,
+    branchOptions,
+    commitWorkingCopy,
+    dispatch,
+    selectedRevision.id
+  ]);
 
   const handleSwitchBranch = useCallback(
     (branchId: string) => {
@@ -279,34 +367,130 @@ export const App: React.FC = () => {
         setPendingNav({ kind: "switch-branch", branchId });
         return;
       }
+      setMergePreview(null);
       dispatch({ type: "SWITCH_BRANCH", branchId });
     },
     [dispatch, isDirty]
   );
 
-  const handleMergeBranch = () => {
+  const handlePreviewMerge = useCallback(() => {
     const source = mergeOptions.find((branch) => branch.id === mergeSourceId);
     if (!source) return;
 
-    let mergeParentId = currentBranch.headRevisionId;
+    let targetHeadId = currentBranch.headRevisionId;
+    let revisions = doc.revisions;
 
     if (isDirty) {
-      mergeParentId =
-        commitWorkingCopy("Auto-commit before merge") ?? mergeParentId;
+      const committedId =
+        commitWorkingCopy("Auto-commit before merge preview") ?? targetHeadId;
+      const committedRevision: Revision = {
+        id: committedId,
+        parentId: selectedRevision.id,
+        createdAt: nowIso(),
+        author: "user",
+        content: workingContent,
+        rationale: "Auto-commit before merge preview",
+        stage: selectedRevision.stage
+      };
+      revisions = {
+        ...revisions,
+        [committedId]: committedRevision
+      };
+      targetHeadId = committedId;
     }
 
-    const sourceHead = doc.revisions[source.headRevisionId];
+    const sourceHead = revisions[source.headRevisionId];
+    const targetHead = revisions[targetHeadId];
+    if (!sourceHead || !targetHead) return;
+
+    const baseRevisionId = findCommonAncestorRevisionId(
+      revisions,
+      targetHead.id,
+      sourceHead.id
+    );
+    const baseContent = baseRevisionId ? revisions[baseRevisionId]?.content ?? "" : "";
+
+    setMergePreview(
+      buildMergePreview({
+        sourceBranchId: source.id,
+        sourceBranchName: source.name,
+        sourceStage: sourceHead.stage,
+        targetHeadId: targetHead.id,
+        sourceHeadId: sourceHead.id,
+        baseRevisionId,
+        baseContent,
+        targetContent: targetHead.content,
+        sourceContent: sourceHead.content,
+        resolution: "manual"
+      })
+    );
+  }, [
+    buildMergePreview,
+    commitWorkingCopy,
+    currentBranch.headRevisionId,
+    doc.revisions,
+    isDirty,
+    mergeOptions,
+    mergeSourceId,
+    selectedRevision.id,
+    selectedRevision.stage,
+    workingContent
+  ]);
+
+  const handleMergeResolutionChange = useCallback(
+    (resolution: MergeResolution) => {
+      if (!mergePreview) return;
+      setMergePreview(
+        buildMergePreview({
+          sourceBranchId: mergePreview.sourceBranchId,
+          sourceBranchName: mergePreview.sourceBranchName,
+          sourceStage: mergePreview.sourceStage,
+          targetHeadId: mergePreview.targetHeadId,
+          sourceHeadId: mergePreview.sourceHeadId,
+          baseRevisionId: mergePreview.baseRevisionId,
+          baseContent: mergePreview.baseContent,
+          targetContent: mergePreview.targetContent,
+          sourceContent: mergePreview.sourceContent,
+          resolution
+        })
+      );
+    },
+    [buildMergePreview, mergePreview]
+  );
+
+  const handleApplyMerge = useCallback(() => {
+    if (!mergePreview) return;
+
+    const sourceHead = doc.revisions[mergePreview.sourceHeadId];
+    if (!sourceHead) return;
+
+    if (currentBranch.headRevisionId !== mergePreview.targetHeadId) {
+      setSaveStatus("Merge preview is stale. Re-run preview.");
+      return;
+    }
+
+    const rationale =
+      mergePreview.conflictCount > 0
+        ? `Merged from branch ${mergePreview.sourceBranchName} (${mergePreview.conflictCount} conflicts, ${resolutionLabel[mergePreview.resolution]})`
+        : `Merged from branch ${mergePreview.sourceBranchName}`;
+
     const revision: Revision = {
       id: createId(),
-      parentId: mergeParentId,
+      parentId: mergePreview.targetHeadId,
       createdAt: nowIso(),
       author: "user",
-      content: sourceHead.content,
-      rationale: `Merged from branch ${source.name}`,
+      content: mergePreview.mergedContent,
+      rationale,
       stage: sourceHead.stage
     };
     dispatch({ type: "ADD_REVISION", revision });
-  };
+    setMergePreview(null);
+    setSaveStatus(
+      mergePreview.conflictCount > 0
+        ? `Merged with ${mergePreview.conflictCount} resolved conflicts`
+        : "Merge completed"
+    );
+  }, [currentBranch.headRevisionId, dispatch, doc.revisions, mergePreview]);
 
   const handleExport = useCallback(() => {
     const data = exportState(state);
@@ -325,17 +509,25 @@ export const App: React.FC = () => {
     printHtml(docHtml);
   }, [doc.title, workingContent]);
 
-  const handleImport = (file: File | null) => {
-    if (!file) return;
+  const handleImport = (file: File | null, input: HTMLInputElement | null) => {
+    if (!file) {
+      if (input) input.value = "";
+      return;
+    }
     readFileAsText(file)
       .then((text) => {
         const imported = importState(text);
         dispatch({ type: "RESET", state: imported });
-        setSaveStatus(`Imported ${new Date().toLocaleTimeString()}`);
+        const importedTitle = imported.document?.title || "Untitled Draft";
+        setSaveStatus(`Imported "${importedTitle}" at ${new Date().toLocaleTimeString()}`);
+        setMergePreview(null);
       })
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : "Import failed.";
         setSaveStatus(`Import failed: ${message}`);
+      })
+      .finally(() => {
+        if (input) input.value = "";
       });
   };
 
@@ -367,6 +559,7 @@ export const App: React.FC = () => {
         dispatch({ type: "SWITCH_BRANCH", branchId: next.branchId });
       }
 
+      setMergePreview(null);
       setPendingNav(null);
     },
     [commitWorkingCopy, dispatch, pendingNav, selectedRevision.content]
@@ -460,7 +653,9 @@ export const App: React.FC = () => {
             <input
               type="file"
               accept="application/json"
-              onChange={(event) => handleImport(event.target.files?.[0] ?? null)}
+              onChange={(event) =>
+                handleImport(event.target.files?.[0] ?? null, event.currentTarget)
+              }
             />
           </label>
         </div>
@@ -494,6 +689,7 @@ export const App: React.FC = () => {
               <label className="field">
                 <span>Branch</span>
                 <select
+                  aria-label="Current branch"
                   value={doc.currentBranchId}
                   onChange={(event) => handleSwitchBranch(event.target.value)}
                 >
@@ -508,16 +704,24 @@ export const App: React.FC = () => {
                 <input
                   placeholder="New branch name"
                   value={branchName}
-                  onChange={(event) => setBranchName(event.target.value)}
+                  onChange={(event) => {
+                    setBranchName(event.target.value);
+                    if (branchError) setBranchError("");
+                  }}
                 />
                 <button type="button" onClick={handleCreateBranch}>
                   Create
                 </button>
               </div>
+              {branchError ? <p className="muted error">{branchError}</p> : null}
               <div className="branch-merge">
                 <select
+                  aria-label="Merge source branch"
                   value={mergeSourceId}
-                  onChange={(event) => setMergeSourceId(event.target.value)}
+                  onChange={(event) => {
+                    setMergeSourceId(event.target.value);
+                    setMergePreview(null);
+                  }}
                 >
                   <option value="">Merge from branch</option>
                   {mergeOptions.map((branch) => (
@@ -526,12 +730,63 @@ export const App: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <button type="button" onClick={handleMergeBranch}>
-                  Merge
+                <button
+                  type="button"
+                  onClick={handlePreviewMerge}
+                  disabled={!mergeSourceId}
+                >
+                  Preview merge
                 </button>
               </div>
             </div>
           </div>
+
+          {mergePreview ? (
+            <div className="panel merge-preview">
+              <div className="panel-header">
+                <div>
+                  <h3>Merge preview</h3>
+                  <p className="muted">
+                    {mergePreview.sourceBranchName} → {currentBranch.name}
+                    {mergePreview.baseRevisionId ? ` · base ${mergePreview.baseRevisionId}` : ""}
+                  </p>
+                </div>
+                <div className="merge-actions">
+                  <button type="button" className="ghost" onClick={() => setMergePreview(null)}>
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleApplyMerge}>
+                    Apply merge
+                  </button>
+                </div>
+              </div>
+              <p className={`muted${mergePreview.conflictCount > 0 ? " error" : ""}`}>
+                {mergePreview.conflictCount > 0
+                  ? `Potential conflicts: ${mergePreview.conflictCount}`
+                  : "No conflicts detected."}
+              </p>
+              <label className="field">
+                <span>Conflict resolution</span>
+                <select
+                  aria-label="Conflict resolution"
+                  value={mergePreview.resolution}
+                  onChange={(event) =>
+                    handleMergeResolutionChange(event.target.value as MergeResolution)
+                  }
+                  disabled={mergePreview.conflictCount === 0}
+                >
+                  <option value="manual">Manual conflict markers</option>
+                  <option value="prefer-target">Prefer current branch</option>
+                  <option value="prefer-source">Prefer source branch</option>
+                </select>
+              </label>
+              <DiffView
+                before={mergePreview.targetContent}
+                after={mergePreview.mergedContent}
+                mode="inline"
+              />
+            </div>
+          ) : null}
 
           <div className="editor-grid">
             <div className="panel">
