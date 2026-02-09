@@ -7,9 +7,6 @@
 - Gaps found during codebase exploration
 
 ## Candidate Features To Do
-- [ ] P0: Commit root `AGENTS.md` autonomous contract + prevent drift with `docs/AGENTS.md` pointer.
-- [ ] P1: Add optional local LLM provider adapter (Ollama first) with explicit offline fallback + connection health checks.
-- [ ] P1: Add non-blocking toast notifications (with an a11y live region) for branch/import/export/merge/LLM outcomes.
 - [ ] P2: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
 - [ ] P2: Add keyboard shortcut cheat sheet modal (Cmd/Ctrl + /) and surface `Shift+O` outline shortcut.
@@ -18,6 +15,12 @@
 - [ ] P3: Multi-document library (create/switch/rename/delete) with local persistence.
 
 ## Implemented
+- [x] 2026-02-09: Added canonical autonomous engineering contract at repo root (`AGENTS.md`) and prevented drift by pointing `docs/AGENTS.md` to the canonical contract.
+  Evidence: `AGENTS.md`, `docs/AGENTS.md`.
+- [x] 2026-02-09: Added optional local Ollama LLM provider (with model refresh + connection test) and safe offline fallback when provider fails.
+  Evidence: `src/agents/llmAdapter.ts`, `src/ui/SettingsPanel.tsx`, `tests/llmAdapter.test.ts`, `npm run check`.
+- [x] 2026-02-09: Added non-blocking toast notifications (a11y `aria-live`) for branch/import/export/merge/LLM outcomes.
+  Evidence: `src/ui/ToastStack.tsx`, `src/App.tsx`, `src/styles.css`, `npm run check`.
 - [x] 2026-02-09: Added three-way merge preview with explicit conflict resolution before merge commit.
   Evidence: `src/lib/merge.ts`, `src/App.tsx`, `src/styles.css`.
 - [x] 2026-02-09: Added merge regression coverage for utility behavior, clean merge flow, and conflict resolution flow.
