@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Added distraction-free focus mode and typewriter mode toggles (with keyboard shortcuts).
+- Added revision labels (named versions) and a History filter for labeled-only milestones.
+- HTML/PDF export now supports selectable export themes (Paper/Classic/Night).
 - LLM settings now support an optional local Ollama provider (with model refresh + connection test) in addition to the offline stub.
 - Added non-blocking toast notifications for branch/import/export/merge/LLM outcomes.
 - Branch merge now uses a three-way preview with conflict detection and selectable resolution (`manual markers`, `prefer current`, `prefer source`) before commit.

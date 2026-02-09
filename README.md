@@ -9,8 +9,10 @@ Runs a draft through a multi-stage pipeline (draft → critique → revise → p
 - Agent pipeline that creates revisions with rationale (optional local LLM via Ollama, or stub).
 - Branchable revision history with filters and three-way merge preview/resolution.
 - Inline or side-by-side diffs.
+- Revision labels (named versions) for milestones and filtering.
+- Focus mode + typewriter mode toggles for distraction-free drafting.
 - Local persistence with JSON import/export.
-- Export to HTML and PDF.
+- Export to HTML and PDF with selectable export themes.
 
 ## Quickstart
 ```bash
@@ -31,6 +33,8 @@ npm run lint:workflows
 - Cmd/Ctrl + Shift + H: export HTML
 - Cmd/Ctrl + Shift + P: print/PDF
 - Cmd/Ctrl + Shift + O: generate outline
+- Cmd/Ctrl + Shift + F: focus mode
+- Cmd/Ctrl + Shift + T: typewriter mode
 - Cmd/Ctrl + /: show shortcuts
 
 ## Docker

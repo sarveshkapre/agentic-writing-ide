@@ -1,5 +1,35 @@
 # Project Memory
 
+## Entry 2026-02-09 — Export themes for HTML/PDF + safe title escaping
+- Decision: Add a small preset export theme library (Paper/Classic/Night) for HTML/PDF export and escape the HTML `<title>` to avoid export-time injection.
+- Why: Export quality and styling is a baseline expectation in writing tools; escaping export metadata is a low-effort hardening step.
+- Evidence:
+  - `src/lib/exportDoc.ts`
+  - `tests/exportDoc.test.ts`
+  - `npm run check` (pass)
+- Commit: `51715c8c56b6b372fcc266a406c1011a88ca2522`
+- Confidence: high
+- Trust label: verified-local
+- Follow-up:
+  - Consider a per-document export theme setting (in addition to global preference) if multi-document lands.
+
+## Entry 2026-02-09 — Focus/typewriter modes + revision labels (named versions)
+- Decision: Add distraction-free focus mode (hide sidebar/preview), typewriter mode (cursor centering), and revision labels with History filtering for labeled-only milestones.
+- Why: Focus/typewriter improves drafting ergonomics; named versions/labels make long-form iteration safer and easier to navigate.
+- Evidence:
+  - `src/App.tsx`
+  - `src/ui/Editor.tsx`
+  - `src/ui/HistoryPanel.tsx`
+  - `src/state/store.tsx`
+  - `src/styles.css`
+  - `tests/app.smoke.test.tsx`
+  - `npm run check` (pass)
+- Commit: `3a9bb1c4bfd9e4d70db50d506362477a82506b55`
+- Confidence: medium-high
+- Trust label: verified-local
+- Follow-up:
+  - If typewriter mode feels jumpy on very large documents, consider throttling cursor-centering to animation frames only when the caret line changes.
+
 ## Entry 2026-02-09 — Three-way merge preview before commit
 - Decision: Replace branch merge "copy source head" behavior with a three-way merge preview that reports conflicts and allows explicit resolution (`manual`, `prefer-target`, `prefer-source`) before writing a revision.
 - Why: Silent overwrite merges were a production risk for writing workflows because users could lose edits without visibility.
@@ -117,3 +147,10 @@
 - `gh run watch 21818290172 --exit-status` (pass; CodeQL)
 - `gh run watch 21818352638 --exit-status` (pass; CI for `01d1c85`)
 - `gh run watch 21818352632 --exit-status` (pass; CodeQL for `01d1c85`)
+
+## Verification Evidence (2026-02-09, Cycle 3)
+- `npm run check` (pass)
+- `npm run dev -- --host 127.0.0.1 --port 4173` (pass; server started)
+- `curl -sf http://127.0.0.1:4173/ | head` (pass; returned HTML)
+- `gh run watch 21826127286 --exit-status` (pass; CI)
+- `gh run watch 21826127303 --exit-status` (pass; CodeQL)

@@ -9,9 +9,6 @@
 ## Candidate Features To Do
 - [ ] P2: Add E2E smoke coverage (Playwright) for import/export + stash navigation happy path.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
-- [ ] P2: Add a focus mode / typewriter mode toggle for distraction-free drafting (CSS-only + keyboard shortcut).
-- [ ] P2: Add export templates/themes for HTML/PDF (simple preset library).
-- [ ] P3: Add revision labels (named versions) to make milestones easy to find in History search/filter.
 - [ ] P3: Multi-document library (create/switch/rename/delete) with local persistence.
 
 ## Session Scoring (2026-02-09, Cycle 1)
@@ -37,7 +34,23 @@ Not selected this cycle:
 - Export themes: impact 3, effort 3, strategic fit 4, differentiation 2, risk 1, confidence 4.
 - Multi-document library: impact 5, effort 5, strategic fit 5, differentiation 3, risk 3, confidence 2.
 
+## Session Scoring (2026-02-09, Cycle 3)
+Selected (1-5 scale; higher is better except risk):
+- Focus + typewriter modes: impact 4, effort 3, strategic fit 5, differentiation 2, risk 1, confidence 4.
+- Revision labels (named versions): impact 4, effort 3, strategic fit 5, differentiation 2, risk 2, confidence 4.
+- Export themes (HTML/PDF): impact 3, effort 2, strategic fit 4, differentiation 2, risk 1, confidence 4.
+
+Not selected this cycle:
+- Playwright E2E smoke: impact 4, effort 4, strategic fit 5, differentiation 1, risk 2, confidence 3.
+- Merge alignment improvements: impact 4, effort 4, strategic fit 5, differentiation 4, risk 3, confidence 2.
+
 ## Implemented
+- [x] 2026-02-09: Added distraction-free focus mode + typewriter mode (toggles + keyboard shortcuts) and persisted UI preferences.
+  Evidence: `src/App.tsx`, `src/ui/Editor.tsx`, `src/state/store.tsx`, `src/styles.css`, `tests/app.smoke.test.tsx`, `npm run check`.
+- [x] 2026-02-09: Added revision labels (named versions) plus History filter/search support for labeled milestones.
+  Evidence: `src/App.tsx`, `src/ui/HistoryPanel.tsx`, `src/state/store.tsx`, `tests/app.smoke.test.tsx`, `npm run check`.
+- [x] 2026-02-09: Added selectable export themes for HTML/PDF export and escaped export titles.
+  Evidence: `src/lib/exportDoc.ts`, `src/App.tsx`, `tests/exportDoc.test.ts`, `npm run check`.
 - [x] 2026-02-09: Added OpenAI-compatible local endpoint adapter (LM Studio) to the LLM pipeline settings, including model refresh and connection tests.
   Evidence: `src/agents/llmAdapter.ts`, `src/ui/SettingsPanel.tsx`, `tests/llmAdapter.test.ts`, `npm test`.
 - [x] 2026-02-09: Added keyboard shortcut cheat sheet modal (Cmd/Ctrl + /) and a sidebar entry-point.
@@ -97,6 +110,10 @@ Not selected this cycle:
   - Export quality matters (PDF/HTML) with theme-able output. Sources: Typora export formats and theme support. https://support.typora.io/Export/
   - Navigability scales better with an outline-like affordance and quick switches between views. Source: Obsidian core plugins (outline, backlinks, etc.). https://help.obsidian.md/plugins/core-plugins
   - Durable revision history and “named versions” make long-form iteration safer. Source: Google Docs version history + named versions. https://support.google.com/docs/answer/190843
+- Market scan (untrusted, 2026-02-09): Additional expectations for long-form writing IDEs:
+  - Focus mode and typewriter scrolling are explicit features in dedicated writing apps (iA Writer). https://ia.net/writer
+  - Export styling is often user-selectable via styles/themes (Ulysses export styles). https://ulysses.app/blog/2022/12/the-ultimate-guide-to-ulysses-export
+  - Milestone snapshots/labels are common in long-form authoring tools (Scrivener snapshots). https://scrivener.tenderapp.com/help/kb/features-and-usage/snapshots
 
 ## Notes
 - This file is maintained by the autonomous clone loop.
