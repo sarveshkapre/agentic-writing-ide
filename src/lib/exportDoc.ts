@@ -1,9 +1,81 @@
-export const wrapHtml = (title: string, body: string) => `<!doctype html>
+export type ExportTheme = {
+  id: string;
+  name: string;
+  colorScheme: "light" | "dark";
+  vars: Record<string, string>;
+};
+
+export const exportThemes: ExportTheme[] = [
+  {
+    id: "paper",
+    name: "Paper",
+    colorScheme: "light",
+    vars: {
+      ink: "#0b1a1f",
+      "ink-soft": "#22343b",
+      paper: "#ffffff",
+      border: "rgba(11, 26, 31, 0.12)",
+      teal: "#0c6b68"
+    }
+  },
+  {
+    id: "classic",
+    name: "Classic",
+    colorScheme: "light",
+    vars: {
+      ink: "#1f1a12",
+      "ink-soft": "#3a2f22",
+      paper: "#f7f1e8",
+      border: "rgba(31, 26, 18, 0.16)",
+      teal: "#0c6b68"
+    }
+  },
+  {
+    id: "night",
+    name: "Night",
+    colorScheme: "dark",
+    vars: {
+      ink: "#f8f3ea",
+      "ink-soft": "#d4cbbf",
+      paper: "#141719",
+      border: "rgba(248, 243, 234, 0.14)",
+      teal: "#2cb8b4"
+    }
+  }
+];
+
+const getExportTheme = (id: string | undefined): ExportTheme =>
+  exportThemes.find((theme) => theme.id === id) ?? exportThemes[0];
+
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const buildThemeCss = (theme: ExportTheme): string => {
+  const vars = Object.entries(theme.vars)
+    .map(([key, val]) => `      --${key}: ${val};`)
+    .join("\n");
+  return `
+    :root {
+      color-scheme: ${theme.colorScheme};
+${vars}
+    }`;
+};
+
+export const wrapHtml = (title: string, body: string, themeId?: string) => {
+  const theme = getExportTheme(themeId);
+  const safeTitle = escapeHtml(title);
+
+  return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title}</title>
+  <title>${safeTitle}</title>
   <style>
     :root {
       color-scheme: light dark;
@@ -21,7 +93,7 @@ export const wrapHtml = (title: string, body: string) => `<!doctype html>
       padding: 2.5rem clamp(1.25rem, 4vw, 3.5rem);
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
-      background: #ffffff;
+      background: var(--paper);
       line-height: 1.65;
     }
 
@@ -102,6 +174,8 @@ export const wrapHtml = (title: string, body: string) => `<!doctype html>
     @page {
       margin: 18mm;
     }
+
+${buildThemeCss(theme)}
   </style>
 </head>
 <body>
@@ -110,4 +184,4 @@ export const wrapHtml = (title: string, body: string) => `<!doctype html>
   </main>
 </body>
 </html>`;
-
+};
