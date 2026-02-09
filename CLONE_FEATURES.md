@@ -92,6 +92,11 @@ Not selected this cycle:
 - Market scan (untrusted): Local LLM runtimes are an easy "real provider" step that stays local-first:
   - Ollama exposes a simple HTTP API (`/api/tags`, `/api/generate`): https://github.com/ollama/ollama/blob/main/docs/api.md
   - LM Studio runs a local OpenAI-compatible server (`/v1/models`, `/v1/chat/completions`): https://lmstudio.ai/docs/api/openai-api
+- Market scan (untrusted, 2026-02-09): Baseline writing-app UX expectations we should hit:
+  - Distraction-free modes (focus/typewriter) and readable typography are table stakes. Sources: Typora focus mode/typewriter mode. https://typora.io/
+  - Export quality matters (PDF/HTML) with theme-able output. Sources: Typora export formats and theme support. https://support.typora.io/Export/
+  - Navigability scales better with an outline-like affordance and quick switches between views. Source: Obsidian core plugins (outline, backlinks, etc.). https://help.obsidian.md/plugins/core-plugins
+  - Durable revision history and “named versions” make long-form iteration safer. Source: Google Docs version history + named versions. https://support.google.com/docs/answer/190843
 
 ## Notes
 - This file is maintained by the autonomous clone loop.
