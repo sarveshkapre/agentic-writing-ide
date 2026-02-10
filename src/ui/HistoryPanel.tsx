@@ -1,18 +1,6 @@
 import React, { useMemo, useState } from "react";
+import { buildHistory } from "../lib/history";
 import type { Branch, Revision, StageId } from "../state/types";
-
-const buildHistory = (
-  revisions: Record<string, Revision>,
-  headId: string
-): Revision[] => {
-  const ordered: Revision[] = [];
-  let current: Revision | undefined = revisions[headId];
-  while (current) {
-    ordered.push(current);
-    current = current.parentId ? revisions[current.parentId] : undefined;
-  }
-  return ordered;
-};
 
 export const HistoryPanel: React.FC<{
   branch: Branch;

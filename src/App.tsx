@@ -25,6 +25,7 @@ import { MarkdownPreview } from "./ui/MarkdownPreview";
 import { MetricsPanel } from "./ui/MetricsPanel";
 import { OutlinePanel } from "./ui/OutlinePanel";
 import { PipelinePanel } from "./ui/PipelinePanel";
+import { SearchModal } from "./ui/SearchModal";
 import { SettingsPanel } from "./ui/SettingsPanel";
 import { ShortcutsModal } from "./ui/ShortcutsModal";
 import { ToastStack, type Toast, type ToastKind } from "./ui/ToastStack";
@@ -92,13 +93,19 @@ export const App: React.FC = () => {
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const editorApiRef = useRef<EditorApi | null>(null);
   const [cursorIndex, setCursorIndex] = useState(0);
   const [pendingDeleteDocumentId, setPendingDeleteDocumentId] = useState<string | null>(
     null
   );
+  const [pendingJump, setPendingJump] = useState<{
+    revisionId: string;
+    index: number;
+  } | null>(null);
   const [pendingNav, setPendingNav] = useState<
-    | { kind: "select-revision"; revisionId: string }
+    | { kind: "select-revision"; revisionId: string; jumpIndex?: number }
     | { kind: "switch-branch"; branchId: string }
     | { kind: "switch-document"; documentId: string }
     | null
@@ -136,6 +143,13 @@ export const App: React.FC = () => {
     }, 200);
     return () => clearTimeout(timeout);
   }, [state]);
+
+  useEffect(() => {
+    if (!pendingJump) return;
+    if (session.selectedRevisionId !== pendingJump.revisionId) return;
+    editorApiRef.current?.jumpTo(pendingJump.index);
+    setPendingJump(null);
+  }, [pendingJump, session.selectedRevisionId]);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -655,10 +669,13 @@ export const App: React.FC = () => {
   };
 
   const requestSelectRevision = useCallback(
-    (revisionId: string) => {
+    (revisionId: string, jumpIndex?: number) => {
       if (isDirty) {
-        setPendingNav({ kind: "select-revision", revisionId });
+        setPendingNav({ kind: "select-revision", revisionId, jumpIndex });
         return;
+      }
+      if (typeof jumpIndex === "number" && Number.isFinite(jumpIndex)) {
+        setPendingJump({ revisionId, index: jumpIndex });
       }
       dispatch({ type: "SELECT_REVISION", revisionId });
     },
@@ -677,6 +694,9 @@ export const App: React.FC = () => {
       }
 
       if (next.kind === "select-revision") {
+        if (typeof next.jumpIndex === "number" && Number.isFinite(next.jumpIndex)) {
+          setPendingJump({ revisionId: next.revisionId, index: next.jumpIndex });
+        }
         dispatch({ type: "SELECT_REVISION", revisionId: next.revisionId });
       } else if (next.kind === "switch-branch") {
         dispatch({ type: "SWITCH_BRANCH", branchId: next.branchId });
@@ -750,6 +770,10 @@ export const App: React.FC = () => {
         event.preventDefault();
         void handleRunStage("polish");
       }
+      if (!event.shiftKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        setShowSearch(true);
+      }
       if (event.shiftKey && event.key.toLowerCase() === "e") {
         event.preventDefault();
         handleExport();
@@ -798,6 +822,25 @@ export const App: React.FC = () => {
       {showShortcuts ? (
         <ShortcutsModal onClose={() => setShowShortcuts(false)} />
       ) : null}
+      {showSearch ? (
+        <SearchModal
+          branch={currentBranch}
+          revisions={doc.revisions}
+          workingContent={workingContent}
+          selectedRevisionId={selectedRevision.id}
+          query={searchQuery}
+          onChangeQuery={setSearchQuery}
+          onClose={() => setShowSearch(false)}
+          onJumpWorking={(index) => {
+            editorApiRef.current?.jumpTo(index);
+            setShowSearch(false);
+          }}
+          onJumpRevision={(revisionId, index) => {
+            requestSelectRevision(revisionId, index);
+            setShowSearch(false);
+          }}
+        />
+      ) : null}
       <header className="topbar">
         <div>
           <p className="eyebrow">Agentic Writing IDE</p>
@@ -805,6 +848,9 @@ export const App: React.FC = () => {
         </div>
         <div className="topbar-actions">
           <span className="status">{saveStatus}</span>
+          <button className="ghost" type="button" onClick={() => setShowSearch(true)}>
+            Search
+          </button>
           <button
             className={focusMode ? "ghost active" : "ghost"}
             type="button"
@@ -1174,6 +1220,7 @@ export const App: React.FC = () => {
               <h3>Shortcuts</h3>
               <p className="muted">Cmd/Ctrl + 1-4: run stages</p>
               <p className="muted">Cmd/Ctrl + S: commit edit</p>
+              <p className="muted">Cmd/Ctrl + F: search</p>
               <p className="muted">Cmd/Ctrl + Shift + E: export JSON</p>
               <p className="muted">Cmd/Ctrl + Shift + H: export HTML</p>
               <p className="muted">Cmd/Ctrl + Shift + P: print/PDF</p>

@@ -31,6 +31,7 @@ npm run e2e:smoke
 ## Keyboard shortcuts
 - Cmd/Ctrl + 1-4: run pipeline stages
 - Cmd/Ctrl + S: commit edit
+- Cmd/Ctrl + F: search
 - Cmd/Ctrl + Shift + E: export JSON
 - Cmd/Ctrl + Shift + H: export HTML
 - Cmd/Ctrl + Shift + P: print/PDF
