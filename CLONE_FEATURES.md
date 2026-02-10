@@ -7,14 +7,29 @@
 - Gaps found during codebase exploration
 
 ## Candidate Features To Do
+- [ ] P1: In-app search (Cmd/Ctrl + F) across working copy + revisions with jump-to-result.
 - [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
-- [ ] P2: Document-wide search (working copy + revisions) with jump-to-result and diff context.
+- [ ] P2: Find + replace in editor (at least within working copy) with keyboard shortcuts.
 - [ ] P3: Local comments/annotations (non-destructive) tied to revision ranges/line numbers.
-- [ ] P3: Add stable `data-testid` attributes for key flows (edit/commit/export/import/branch/merge) to support E2E and future automation.
-- [ ] P3: Add Markdown export (`.md`) with frontmatter option (title/label/createdAt) for interoperability.
+- [ ] P2: Add stable `data-testid` attributes for key flows (edit/commit/export/import/branch/merge) to support E2E and future automation.
+- [ ] P2: Add Markdown export (`.md`) with optional frontmatter (title/label/createdAt) for interoperability.
 - [ ] P3: Add per-document preferences (default export theme, default target word count) with migration-safe persistence.
-- [ ] P3: Performance: memoize expensive diff computations and add a long-document perf smoke test (~50k words).
+- [ ] P2: Performance: memoize expensive diff computations and add a long-document perf smoke test (~50k words).
 - [ ] P0: Security: keep npm audit clear (dependency bumps + CI guardrails). Current moderate advisory would require Vite major upgrade; track and reassess.
+
+## Session Scoring (2026-02-10, Cycle 1)
+Selected (1-5 scale; higher is better except risk):
+- Document-wide search modal (Cmd/Ctrl + F): impact 5, effort 3, strategic fit 5, differentiation 2, risk 2, confidence 3.
+- Markdown export (.md) with optional frontmatter: impact 4, effort 2, strategic fit 5, differentiation 1, risk 1, confidence 4.
+- Stable `data-testid` attributes for key flows: impact 3, effort 1, strategic fit 4, differentiation 1, risk 1, confidence 5.
+- Diff perf: memoize expensive diff computations: impact 3, effort 1, strategic fit 4, differentiation 1, risk 1, confidence 5.
+
+Not selected this cycle:
+- Improve merge alignment: impact 4, effort 4, strategic fit 5, differentiation 4, risk 3, confidence 2.
+- Find + replace: impact 4, effort 3, strategic fit 4, differentiation 1, risk 2, confidence 3.
+- Comments/annotations: impact 4, effort 4, strategic fit 4, differentiation 3, risk 3, confidence 2.
+- Per-document preferences: impact 3, effort 3, strategic fit 4, differentiation 2, risk 2, confidence 3.
+- Long-doc perf smoke test: impact 3, effort 2, strategic fit 4, differentiation 1, risk 2, confidence 3.
 
 ## Session Scoring (2026-02-09, Cycle 1)
 Selected (1-5 scale; higher is better except risk):
@@ -152,6 +167,11 @@ Not selected this cycle:
   - Focus mode and typewriter scrolling are explicit features in dedicated writing apps (iA Writer). https://ia.net/writer
   - Export styling is often user-selectable via styles/themes (Ulysses export styles). https://ulysses.app/blog/2022/12/the-ultimate-guide-to-ulysses-export
   - Milestone snapshots/labels are common in long-form authoring tools (Scrivener snapshots). https://scrivener.tenderapp.com/help/kb/features-and-usage/snapshots
+
+- Market scan (untrusted, 2026-02-10): Baseline expectations we should hit next:
+  - In-app search/find is table-stakes and often spans the whole workspace/vault. Sources: Obsidian search docs. https://help.obsidian.md/Plugins/Search
+  - Find/replace ergonomics matter for long-form drafting. Source: Typora find/replace docs. https://support.typora.io/Find-and-Replace/
+  - Markdown export interoperability is a common "escape hatch" even for opinionated editors. Source: iA Writer features (Markdown). https://ia.net/writer
 
 ## Notes
 - This file is maintained by the autonomous clone loop.
