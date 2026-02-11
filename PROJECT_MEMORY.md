@@ -41,6 +41,18 @@
 - Confidence: medium
 - Trust label: untrusted
 
+## Entry 2026-02-11 — Backlog and operations tracker refresh
+- Decision: Refresh `CLONE_FEATURES.md`, `AGENTS.md` mutable timestamp, and session verification/incident logs to reflect shipped work and remaining priorities.
+- Why: Autonomous maintenance depends on accurate backlog state, auditable verification evidence, and explicit incident prevention rules.
+- Evidence:
+  - `CLONE_FEATURES.md`
+  - `AGENTS.md`
+  - `PROJECT_MEMORY.md`
+  - `INCIDENTS.md`
+- Commit: `22be1b33adea25a06dd3cc90e297979bd3413bd8`
+- Confidence: high
+- Trust label: trusted
+
 ## Entry 2026-02-09 — Multi-document library (local-first)
 - Decision: Replace single-document state with a document library (create/switch/rename/delete) and migrate persistence from v1 single-document storage to v2 library storage.
 - Why: A writing IDE needs multiple documents (chapters, variants, briefs) to be broadly useful; migration preserves existing users' work while unlocking the library UX.
@@ -295,3 +307,6 @@
 - `git push origin main` (pass; pushed `6260534` to `origin/main`)
 - `gh run watch 21896355215 --repo sarveshkapre/agentic-writing-ide --exit-status` (pass; CI for `6260534`)
 - `gh run watch 21896355202 --repo sarveshkapre/agentic-writing-ide --exit-status` (pass; CodeQL for `6260534`)
+- `git push origin main` (pass; pushed `22be1b3` to `origin/main`)
+- `gh run watch 21896411610 --repo sarveshkapre/agentic-writing-ide --exit-status` (pass; CI for `22be1b3`)
+- `gh run watch 21896411621 --repo sarveshkapre/agentic-writing-ide --exit-status` (pass; CodeQL for `22be1b3`)
