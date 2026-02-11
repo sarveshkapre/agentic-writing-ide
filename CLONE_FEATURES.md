@@ -7,15 +7,35 @@
 - Gaps found during codebase exploration
 
 ## Candidate Features To Do
-- [ ] P1: In-app search (Cmd/Ctrl + F) across working copy + revisions with jump-to-result.
-- [ ] P2: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
-- [ ] P2: Find + replace in editor (at least within working copy) with keyboard shortcuts.
-- [ ] P3: Local comments/annotations (non-destructive) tied to revision ranges/line numbers.
-- [ ] P2: Add stable `data-testid` attributes for key flows (edit/commit/export/import/branch/merge) to support E2E and future automation.
-- [ ] P2: Add Markdown export (`.md`) with optional frontmatter (title/label/createdAt) for interoperability.
-- [ ] P3: Add per-document preferences (default export theme, default target word count) with migration-safe persistence.
-- [ ] P2: Performance: memoize expensive diff computations and add a long-document perf smoke test (~50k words).
-- [ ] P0: Security: keep npm audit clear (dependency bumps + CI guardrails). Current moderate advisory would require Vite major upgrade; track and reassess.
+- [ ] P1: Improve three-way merge alignment to reduce false-positive conflicts for line insertions/moves.
+- [ ] P1: Find + replace in editor (single doc first) with keyboard shortcuts and next/prev match navigation.
+- [ ] P1: Security maintenance: clear remaining moderate `npm audit` advisory (Vite major upgrade + compatibility checks).
+- [ ] P1: Add migration-safe per-document preferences (default export theme, target word count, markdown frontmatter mode).
+- [ ] P2: Add long-document perf smoke path (~50k words) and guardrail threshold for render + diff latency.
+- [ ] P2: Add search result keyboard navigation (arrow keys + enter) and "next/previous hit" for working copy.
+- [ ] P2: Add lightweight branch merge summary panel (changed line count + conflicting sections preview).
+- [ ] P2: Add document quick actions in selector row (rename/delete/sort by recency) to reduce navigation friction.
+- [ ] P2: Add a command palette (`Cmd/Ctrl + K`) for high-frequency actions (stage run, export, branch, search).
+- [ ] P2: Add regression test coverage for markdown export button flows (plain + frontmatter) at app level.
+- [ ] P2: Add focus-management and tab-trap handling for all modals (search/shortcuts/confirm dialogs).
+- [ ] P3: Add local comments/annotations (non-destructive) tied to revision ranges/line numbers.
+- [ ] P3: Add user template CRUD (save current draft as template, edit/delete templates).
+- [ ] P3: Add branch protection warning when merging stale previews after new commits.
+- [ ] P3: Add optional JSON schema validation diagnostics on import with line/column pointers.
+- [ ] P3: Add restore checkpoints for failed import/reset operations.
+
+## Session Scoring (2026-02-11, Cycle 1)
+Selected (1-5 scale; higher is better except risk):
+- Markdown export (`.md`) with optional frontmatter: impact 4, effort 2, strategic fit 5, differentiation 1, risk 1, confidence 5.
+- Stable `data-testid` attributes for key flows + E2E migration: impact 4, effort 2, strategic fit 5, differentiation 1, risk 1, confidence 5.
+- Diff performance: memoize expensive diff computations: impact 3, effort 1, strategic fit 4, differentiation 1, risk 1, confidence 5.
+
+Not selected this cycle:
+- Improve merge alignment: impact 5, effort 4, strategic fit 5, differentiation 4, risk 3, confidence 2.
+- Find + replace: impact 5, effort 3, strategic fit 5, differentiation 2, risk 2, confidence 3.
+- Per-document preferences: impact 4, effort 3, strategic fit 4, differentiation 2, risk 2, confidence 3.
+- Long-doc perf smoke thresholding: impact 4, effort 3, strategic fit 4, differentiation 1, risk 2, confidence 3.
+- Vite major security upgrade: impact 5, effort 4, strategic fit 5, differentiation 1, risk 3, confidence 2.
 
 ## Session Scoring (2026-02-10, Cycle 1)
 Selected (1-5 scale; higher is better except risk):
@@ -88,6 +108,12 @@ Not selected this cycle:
 - Comments/annotations: impact 4, effort 4, strategic fit 4, differentiation 3, risk 3, confidence 2.
 
 ## Implemented
+- [x] 2026-02-11: Added Markdown export (`.md`) with optional frontmatter metadata (`title`, `label`, `createdAt`) plus export-mode selector and shortcut (`Cmd/Ctrl + Shift + M`).
+  Evidence: `src/lib/exportDoc.ts`, `src/App.tsx`, `src/ui/ShortcutsModal.tsx`, `tests/exportDoc.test.ts`, `tests/app.smoke.test.tsx`, `npm run check`, `npm run e2e:smoke`.
+- [x] 2026-02-11: Added stable `data-testid` coverage for critical edit/commit/export/import/branch/merge/history flows and migrated E2E smoke selectors to the stable attributes.
+  Evidence: `src/App.tsx`, `src/ui/Editor.tsx`, `src/ui/HistoryPanel.tsx`, `scripts/e2e-smoke.mjs`, `npm run e2e:smoke`.
+- [x] 2026-02-11: Memoized expensive diff computations to avoid repeated recomputation during non-diff UI re-renders.
+  Evidence: `src/lib/diff.tsx`, `npm run check`.
 - [x] 2026-02-09: Added outline navigator (headings list) with click-to-jump and optional "follow cursor" highlighting for long drafts.
   Evidence: `src/lib/outline.ts`, `src/ui/OutlinePanel.tsx`, `src/ui/Editor.tsx`, `src/App.tsx`, `tests/outline.test.ts`, `npm run check`.
 - [x] 2026-02-09: Added Playwright E2E smoke coverage for import/export + stash navigation, and wired it into CI.
@@ -148,6 +174,16 @@ Not selected this cycle:
   Evidence: `PLAN.md`, `docs/PLAN.md`, `CHANGELOG.md`, `UPDATE.md`.
 
 ## Insights
+- Market scan (untrusted, 2026-02-11): Bounded baseline for writing/editing UX in adjacent tools:
+  - Typora documents dedicated find/replace ergonomics as a core workflow. Source: https://support.typora.io/Find-and-Replace/
+  - VS Code sets a high baseline for in-project search and replace affordances (keyboard-first, scoped search). Source: https://code.visualstudio.com/docs/editing/codebasics#_search-across-files
+  - iA Writer positions Markdown export/interoperability as a default expectation. Source: https://ia.net/writer
+  - Google Docs highlights named version history as a durability baseline for long-form writing workflows. Source: https://support.google.com/docs/answer/190843
+- Gap map (2026-02-11):
+  - Missing: editor find/replace with keyboard-first navigation and replace-all.
+  - Weak: merge alignment still line-index based and can over-report conflicts on shifted blocks.
+  - Parity: markdown export now supports plain + frontmatter metadata.
+  - Differentiator: local-first agent pipeline + branchable revision history with explicit merge preview.
 - Historical CI failures (`#21579381622`, `#21579004301`, `#21553547452`) were parse-time workflow failures with zero jobs; `actionlint` reproduced and pinpointed the invalid expression.
 - Gitleaks GitHub Action expects commit range history on push events; shallow clone breaks scans with `ambiguous argument A^..B`.
 - CodeQL emitted a migration warning for `v3`; proactive upgrades prevent CI breakage before December 2026.
@@ -176,5 +212,5 @@ Not selected this cycle:
 ## Notes
 - This file is maintained by the autonomous clone loop.
 
-### Auto-discovered Open Checklist Items (2026-02-09)
+### Auto-discovered Open Checklist Items (2026-02-11)
 - None

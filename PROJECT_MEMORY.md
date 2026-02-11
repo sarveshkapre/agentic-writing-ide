@@ -1,5 +1,46 @@
 # Project Memory
 
+## Entry 2026-02-11 — Markdown export + automation selector hardening
+- Decision: Add Markdown export (`.md`) with optional frontmatter metadata (`title`, `label`, `createdAt`), add stable `data-testid` attributes for critical flows, and migrate E2E smoke to those selectors.
+- Why: Markdown export improves interoperability for local-first workflows; stable selectors reduce E2E brittleness and make future automation safer.
+- Evidence:
+  - `src/lib/exportDoc.ts`
+  - `src/App.tsx`
+  - `src/ui/Editor.tsx`
+  - `src/ui/HistoryPanel.tsx`
+  - `scripts/e2e-smoke.mjs`
+  - `tests/exportDoc.test.ts`
+  - `tests/app.smoke.test.tsx`
+  - `npm run check` (pass)
+  - `npm run e2e:smoke` (pass)
+- Commit: `626053409abab518b3640ce9af6097ba54ecbc46`
+- Confidence: high
+- Trust label: trusted
+- Follow-up:
+  - Add app-level regression coverage for markdown export downloads (plain + frontmatter payload validation).
+
+## Entry 2026-02-11 — Diff computation memoization
+- Decision: Memoize diff computation in `DiffView` so expensive semantic diffing runs only when compared inputs change.
+- Why: The app re-renders frequently during editing/navigation; avoiding repeated diff recalculation improves responsiveness on longer drafts.
+- Evidence:
+  - `src/lib/diff.tsx`
+  - `npm run check` (pass)
+- Commit: `626053409abab518b3640ce9af6097ba54ecbc46`
+- Confidence: high
+- Trust label: trusted
+
+## Entry 2026-02-11 — Bounded market scan and gap map refresh
+- Decision: Keep merge-alignment and find/replace as top backlog priorities after shipping markdown export + test stability improvements.
+- Why: Adjacent writing tools consistently treat find/replace and durable revision ergonomics as baseline expectations; these remain the highest-impact product gaps.
+- Evidence:
+  - Typora find/replace docs: https://support.typora.io/Find-and-Replace/
+  - VS Code search across files docs: https://code.visualstudio.com/docs/editing/codebasics#_search-across-files
+  - iA Writer product page: https://ia.net/writer
+  - Google Docs version history docs: https://support.google.com/docs/answer/190843
+- Commit: `(documentation-only in tracker updates)`
+- Confidence: medium
+- Trust label: untrusted
+
 ## Entry 2026-02-09 — Multi-document library (local-first)
 - Decision: Replace single-document state with a document library (create/switch/rename/delete) and migrate persistence from v1 single-document storage to v2 library storage.
 - Why: A writing IDE needs multiple documents (chapters, variants, briefs) to be broadly useful; migration preserves existing users' work while unlocking the library UX.
@@ -243,3 +284,14 @@
 - `gh run watch 21843865509 --exit-status` (pass; CodeQL for `742783a`)
 - `gh run watch 21843919046 --exit-status` (pass; CI for `2135683`)
 - `gh run watch 21843919042 --exit-status` (pass; CodeQL for `2135683`)
+
+## Verification Evidence (2026-02-11, Cycle 1)
+- `gh issue list --repo sarveshkapre/agentic-writing-ide --state open --limit 50 --json number,title,author,url` (pass; no owner/bot open issues)
+- `gh run list --repo sarveshkapre/agentic-writing-ide --limit 20 --json databaseId,workflowName,headSha,status,conclusion,createdAt,event` (pass; no failing recent runs before changes)
+- `npm run check` (pass)
+- `npm run e2e:smoke` (fail; `locator.inputValue` timeout on `getByTestId("editor-input")`)
+- `npm run e2e:smoke` (pass; after explicit `await editor.waitFor()` hardening)
+- `bash -lc 'npm run dev -- --host 127.0.0.1 --port 4174 >/tmp/agentic-dev.log 2>&1 & pid=$!; sleep 3; curl -sf http://127.0.0.1:4174/ | head -n 5; kill $pid; wait $pid || true'` (pass; local smoke HTML returned)
+- `git push origin main` (pass; pushed `6260534` to `origin/main`)
+- `gh run watch 21896355215 --repo sarveshkapre/agentic-writing-ide --exit-status` (pass; CI for `6260534`)
+- `gh run watch 21896355202 --repo sarveshkapre/agentic-writing-ide --exit-status` (pass; CodeQL for `6260534`)

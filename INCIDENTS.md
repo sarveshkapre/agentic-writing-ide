@@ -1,5 +1,21 @@
 # Incidents
 
+## 2026-02-11 — E2E smoke locator race after selector migration
+- Severity: low
+- Impact: Local `npm run e2e:smoke` failed once with a timeout while reading the editor value; risk of flaky CI if left unresolved.
+- Detection:
+  - Local run reported `locator.inputValue: Timeout 30000ms exceeded` for `getByTestId("editor-input")`.
+- Root cause:
+  - The script attempted `inputValue()` immediately after page load without explicitly waiting for the editor locator readiness after switching to `data-testid` selectors.
+- Fix:
+  - Added `await editor.waitFor()` before reading input value in `scripts/e2e-smoke.mjs`.
+- Prevention rules:
+  - After migrating selectors in browser automation, explicitly wait for critical locators before interaction/value reads.
+  - Keep at least one rerun of smoke automation in-session whenever selector strategy changes.
+- Evidence:
+  - `scripts/e2e-smoke.mjs`
+  - `npm run e2e:smoke` (fail then pass after fix)
+
 ## 2026-02-02 — CI workflow parse failure (no jobs scheduled)
 - Severity: high
 - Impact: Pushes to `main` reported failed CI with zero runnable jobs, blocking trusted status checks.
