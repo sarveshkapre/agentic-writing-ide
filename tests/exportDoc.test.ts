@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { wrapHtml } from "../src/lib/exportDoc";
+import { wrapHtml, wrapMarkdown } from "../src/lib/exportDoc";
 
 describe("wrapHtml", () => {
   it("escapes the title and applies the requested export theme", () => {
@@ -11,3 +11,24 @@ describe("wrapHtml", () => {
   });
 });
 
+describe("wrapMarkdown", () => {
+  it("returns plain markdown when no frontmatter is provided", () => {
+    expect(wrapMarkdown("# Draft\n\nBody")).toBe("# Draft\n\nBody");
+  });
+
+  it("prepends frontmatter when metadata is provided", () => {
+    const markdown = wrapMarkdown("# Draft\n", {
+      frontmatter: {
+        title: 'My "Draft"',
+        label: "ready\nto-share",
+        createdAt: "2026-02-11T01:02:03.000Z"
+      }
+    });
+
+    expect(markdown).toContain('title: "My \\"Draft\\""');
+    expect(markdown).toContain('label: "ready\\nto-share"');
+    expect(markdown).toContain('createdAt: "2026-02-11T01:02:03.000Z"');
+    expect(markdown).toContain("---\n");
+    expect(markdown.endsWith("# Draft\n")).toBe(true);
+  });
+});

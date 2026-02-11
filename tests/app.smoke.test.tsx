@@ -351,4 +351,21 @@ describe("App", () => {
 
     expect(screen.getByText(/1 revisions/i)).toBeInTheDocument();
   });
+
+  it("shows markdown export controls with optional frontmatter mode", () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    const exportMarkdown = screen.getByRole("button", { name: /export markdown/i });
+    expect(exportMarkdown).toBeInTheDocument();
+
+    const mode = screen.getByLabelText(/markdown export mode/i) as HTMLSelectElement;
+    expect(mode.value).toBe("plain");
+
+    fireEvent.change(mode, { target: { value: "frontmatter" } });
+    expect(mode.value).toBe("frontmatter");
+  });
 });

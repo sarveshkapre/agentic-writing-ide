@@ -71,7 +71,7 @@ export const HistoryPanel: React.FC<{
   const isEmpty = visibleItems.length === 0;
 
   return (
-    <div className="panel history">
+    <div className="panel history" data-testid="history-panel">
       <h3>History</h3>
       <p className="muted">Branch: {branch.name}</p>
       <div className="history-filters">

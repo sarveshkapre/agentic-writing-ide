@@ -3,7 +3,7 @@ import { fetchProviderModels, runLlmStage, testLlmProvider } from "./agents/llmA
 import { stages } from "./agents/pipeline";
 import { applyOutlineToContent, buildOutlineFromBrief, summarizeBrief } from "./lib/brief";
 import { DiffView } from "./lib/diff";
-import { exportThemes, wrapHtml } from "./lib/exportDoc";
+import { exportThemes, wrapHtml, wrapMarkdown } from "./lib/exportDoc";
 import { createId } from "./lib/id";
 import { renderMarkdown } from "./lib/markdown";
 import {
@@ -95,6 +95,9 @@ export const App: React.FC = () => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [markdownExportMode, setMarkdownExportMode] = useState<
+    "plain" | "frontmatter"
+  >("plain");
   const editorApiRef = useRef<EditorApi | null>(null);
   const [cursorIndex, setCursorIndex] = useState(0);
   const [pendingDeleteDocumentId, setPendingDeleteDocumentId] = useState<string | null>(
@@ -610,6 +613,33 @@ export const App: React.FC = () => {
     pushToast("success", "Exported HTML.");
   }, [doc.title, exportThemeId, pushToast, workingContent]);
 
+  const handleExportMarkdown = useCallback(() => {
+    const markdown = wrapMarkdown(workingContent, {
+      frontmatter:
+        markdownExportMode === "frontmatter"
+          ? {
+              title: doc.title,
+              label: selectedRevision.label ?? "",
+              createdAt: selectedRevision.createdAt
+            }
+          : undefined
+    });
+    downloadFile("agentic-draft.md", markdown, "text/markdown;charset=utf-8");
+    pushToast(
+      "success",
+      markdownExportMode === "frontmatter"
+        ? "Exported Markdown with frontmatter."
+        : "Exported Markdown."
+    );
+  }, [
+    doc.title,
+    markdownExportMode,
+    pushToast,
+    selectedRevision.createdAt,
+    selectedRevision.label,
+    workingContent
+  ]);
+
   const handleExportPdf = useCallback(() => {
     const html = renderMarkdown(workingContent);
     const docHtml = wrapHtml(doc.title, html, exportThemeId);
@@ -782,6 +812,10 @@ export const App: React.FC = () => {
         event.preventDefault();
         handleExportHtml();
       }
+      if (event.shiftKey && event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        handleExportMarkdown();
+      }
       if (event.shiftKey && event.key.toLowerCase() === "p") {
         event.preventDefault();
         handleExportPdf();
@@ -811,6 +845,7 @@ export const App: React.FC = () => {
     handleCommitDraft,
     handleExport,
     handleExportHtml,
+    handleExportMarkdown,
     handleExportPdf,
     handleGenerateOutline,
     handleRunStage
@@ -868,6 +903,7 @@ export const App: React.FC = () => {
           <label className="ghost select">
             <span className="sr-only">Export theme</span>
             <select
+              data-testid="export-theme-select"
               aria-label="Export theme"
               value={exportThemeId}
               onChange={(event) =>
@@ -884,18 +920,56 @@ export const App: React.FC = () => {
               ))}
             </select>
           </label>
-          <button className="ghost" type="button" onClick={handleExport}>
+          <label className="ghost select">
+            <span className="sr-only">Markdown export mode</span>
+            <select
+              data-testid="export-markdown-mode-select"
+              aria-label="Markdown export mode"
+              value={markdownExportMode}
+              onChange={(event) =>
+                setMarkdownExportMode(event.target.value as "plain" | "frontmatter")
+              }
+            >
+              <option value="plain">Markdown: Plain</option>
+              <option value="frontmatter">Markdown: + frontmatter</option>
+            </select>
+          </label>
+          <button
+            data-testid="export-json-button"
+            className="ghost"
+            type="button"
+            onClick={handleExport}
+          >
             Export JSON
           </button>
-          <button className="ghost" type="button" onClick={handleExportHtml}>
+          <button
+            data-testid="export-html-button"
+            className="ghost"
+            type="button"
+            onClick={handleExportHtml}
+          >
             Export HTML
           </button>
-          <button className="ghost" type="button" onClick={handleExportPdf}>
+          <button
+            data-testid="export-markdown-button"
+            className="ghost"
+            type="button"
+            onClick={handleExportMarkdown}
+          >
+            Export Markdown
+          </button>
+          <button
+            data-testid="export-pdf-button"
+            className="ghost"
+            type="button"
+            onClick={handleExportPdf}
+          >
             Print / PDF
           </button>
           <label className="ghost file">
             Import JSON
             <input
+              data-testid="import-json-input"
               type="file"
               accept="application/json"
               onChange={(event) =>
@@ -913,10 +987,11 @@ export const App: React.FC = () => {
               <div className="row">
                 <label className="field">
                   <span>Document</span>
-                  <select
-                    aria-label="Current document"
-                    value={state.currentDocumentId}
-                    onChange={(event) => handleSwitchDocument(event.target.value)}
+                <select
+                  data-testid="document-select"
+                  aria-label="Current document"
+                  value={state.currentDocumentId}
+                  onChange={(event) => handleSwitchDocument(event.target.value)}
                   >
                     {documentOptions.map((item) => (
                       <option key={item.id} value={item.id}>
@@ -980,6 +1055,7 @@ export const App: React.FC = () => {
               <label className="field">
                 <span>Branch</span>
                 <select
+                  data-testid="branch-select"
                   aria-label="Current branch"
                   value={doc.currentBranchId}
                   onChange={(event) => handleSwitchBranch(event.target.value)}
@@ -993,6 +1069,7 @@ export const App: React.FC = () => {
               </label>
               <div className="branch-new">
                 <input
+                  data-testid="branch-name-input"
                   placeholder="New branch name"
                   value={branchName}
                   onChange={(event) => {
@@ -1000,13 +1077,18 @@ export const App: React.FC = () => {
                     if (branchError) setBranchError("");
                   }}
                 />
-                <button type="button" onClick={handleCreateBranch}>
+                <button
+                  data-testid="branch-create-button"
+                  type="button"
+                  onClick={handleCreateBranch}
+                >
                   Create
                 </button>
               </div>
               {branchError ? <p className="muted error">{branchError}</p> : null}
               <div className="branch-merge">
                 <select
+                  data-testid="merge-source-select"
                   aria-label="Merge source branch"
                   value={mergeSourceId}
                   onChange={(event) => {
@@ -1022,6 +1104,7 @@ export const App: React.FC = () => {
                   ))}
                 </select>
                 <button
+                  data-testid="merge-preview-button"
                   type="button"
                   onClick={handlePreviewMerge}
                   disabled={!mergeSourceId}
@@ -1046,7 +1129,7 @@ export const App: React.FC = () => {
                   <button type="button" className="ghost" onClick={() => setMergePreview(null)}>
                     Cancel
                   </button>
-                  <button type="button" onClick={handleApplyMerge}>
+                  <button data-testid="merge-apply-button" type="button" onClick={handleApplyMerge}>
                     Apply merge
                   </button>
                 </div>
@@ -1093,6 +1176,7 @@ export const App: React.FC = () => {
               />
               <div className="editor-actions">
                 <button
+                  data-testid="commit-button"
                   className="primary"
                   type="button"
                   onClick={handleCommitDraft}

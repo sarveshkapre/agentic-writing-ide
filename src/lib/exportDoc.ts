@@ -5,6 +5,12 @@ export type ExportTheme = {
   vars: Record<string, string>;
 };
 
+export type MarkdownFrontmatter = {
+  title?: string;
+  label?: string;
+  createdAt?: string;
+};
+
 export const exportThemes: ExportTheme[] = [
   {
     id: "paper",
@@ -54,6 +60,21 @@ const escapeHtml = (value: string): string =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
+const escapeYamlScalar = (value: string): string =>
+  value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r?\n/g, "\\n");
+
+const buildFrontmatter = (frontmatter?: MarkdownFrontmatter): string => {
+  if (!frontmatter) return "";
+
+  const entries = Object.entries(frontmatter).filter(
+    ([, value]) => typeof value === "string" && value.trim() !== ""
+  );
+  if (entries.length === 0) return "";
+
+  const lines = entries.map(([key, value]) => `${key}: "${escapeYamlScalar(value)}"`);
+  return `---\n${lines.join("\n")}\n---\n\n`;
+};
 
 const buildThemeCss = (theme: ExportTheme): string => {
   const vars = Object.entries(theme.vars)
@@ -184,4 +205,12 @@ ${buildThemeCss(theme)}
   </main>
 </body>
 </html>`;
+};
+
+export const wrapMarkdown = (
+  body: string,
+  options?: { frontmatter?: MarkdownFrontmatter }
+): string => {
+  const frontmatter = buildFrontmatter(options?.frontmatter);
+  return `${frontmatter}${body}`;
 };

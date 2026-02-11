@@ -17,6 +17,7 @@ export const ShortcutsModal: React.FC<{
       { keys: "Cmd/Ctrl + F", description: "Search" },
       { keys: "Cmd/Ctrl + Shift + E", description: "Export JSON" },
       { keys: "Cmd/Ctrl + Shift + H", description: "Export HTML" },
+      { keys: "Cmd/Ctrl + Shift + M", description: "Export Markdown" },
       { keys: "Cmd/Ctrl + Shift + P", description: "Print / PDF" },
       { keys: "Cmd/Ctrl + Shift + O", description: "Generate outline" },
       { keys: "Cmd/Ctrl + Shift + F", description: "Toggle focus mode" },

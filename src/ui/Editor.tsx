@@ -115,6 +115,7 @@ export const Editor: React.FC<{
         Markdown editor
       </label>
       <textarea
+        data-testid="editor-input"
         id={id}
         aria-label="Markdown editor"
         ref={ref}

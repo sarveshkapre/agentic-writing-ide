@@ -63,16 +63,17 @@ const main = async () => {
     await page.goto(PREVIEW_URL, { waitUntil: "domcontentloaded" });
     await page.getByText("Agentic Writing IDE").waitFor();
 
-    const editor = page.getByLabel("Markdown editor");
+    const editor = page.getByTestId("editor-input");
+    await editor.waitFor();
     const initialValue = await editor.inputValue();
     const committedLine = "E2E smoke: committed line";
     await editor.fill(`${initialValue}\n\n${committedLine}\n`);
-    await page.getByRole("button", { name: "Commit changes" }).click();
+    await page.getByTestId("commit-button").click();
     await page.getByText("Manual edit commit").waitFor();
 
     const [download] = await Promise.all([
       page.waitForEvent("download"),
-      page.getByRole("button", { name: "Export JSON" }).click()
+      page.getByTestId("export-json-button").click()
     ]);
 
     const downloadPath = join(OUTPUT_DIR, "agentic-writing-ide.json");
@@ -83,12 +84,24 @@ const main = async () => {
       throw new Error("Exported JSON did not contain expected v2 app state.");
     }
 
+    await page.getByTestId("export-markdown-mode-select").selectOption("frontmatter");
+    const [markdownDownload] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByTestId("export-markdown-button").click()
+    ]);
+    const markdownPath = join(OUTPUT_DIR, "agentic-draft.md");
+    await markdownDownload.saveAs(markdownPath);
+    const markdown = readFileSync(markdownPath, "utf8");
+    if (!markdown.includes('title: "Untitled Draft"') || !markdown.includes("---")) {
+      throw new Error("Exported Markdown did not include expected frontmatter.");
+    }
+
     const stashedLine = "E2E smoke: stashed line";
     const afterCommitValue = await editor.inputValue();
     await editor.fill(`${afterCommitValue}\n${stashedLine}\n`);
 
     // Trigger the uncommitted-change confirm dialog by selecting an older revision.
-    const history = page.locator(".panel.history");
+    const history = page.getByTestId("history-panel");
     await history.getByText("Initial draft").click();
     await page.getByRole("dialog").getByText("You have uncommitted changes").waitFor();
     await page.getByRole("button", { name: "Stash & continue" }).click();

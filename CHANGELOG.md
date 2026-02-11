@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Added Markdown export (`.md`) with optional frontmatter metadata (`title`, `label`, `createdAt`) plus a Markdown export mode selector.
+- Added stable `data-testid` attributes across core edit/commit/export/import/branch/merge/history flows and migrated E2E smoke selectors to them.
+- Performance: memoized diff computations in `DiffView` to avoid repeated recalculation on unrelated UI renders.
 - Added outline navigator panel (headings list) with click-to-jump and follow-cursor highlighting for long drafts.
 - Added Playwright-based E2E smoke coverage (export + stash navigation) and wired it into CI.
 - Security maintenance: bumped `dompurify` and dev tooling deps to address npm audit high/critical advisories.

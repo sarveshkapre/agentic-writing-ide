@@ -13,7 +13,7 @@ Runs a draft through a multi-stage pipeline (draft → critique → revise → p
 - Revision labels (named versions) for milestones and filtering.
 - Focus mode + typewriter mode toggles for distraction-free drafting.
 - Local persistence with JSON import/export.
-- Export to HTML and PDF with selectable export themes.
+- Export to Markdown/HTML/PDF with selectable export themes and optional Markdown frontmatter.
 
 ## Quickstart
 ```bash
@@ -34,6 +34,7 @@ npm run e2e:smoke
 - Cmd/Ctrl + F: search
 - Cmd/Ctrl + Shift + E: export JSON
 - Cmd/Ctrl + Shift + H: export HTML
+- Cmd/Ctrl + Shift + M: export Markdown
 - Cmd/Ctrl + Shift + P: print/PDF
 - Cmd/Ctrl + Shift + O: generate outline
 - Cmd/Ctrl + Shift + F: focus mode

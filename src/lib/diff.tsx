@@ -49,15 +49,25 @@ const countOps = (diffs: Diff[]) => {
   return { added, removed };
 };
 
+const computeDiff = (before: string, after: string) => {
+  const dmp = new diff_match_patch();
+  const diffs = dmp.diff_main(before, after);
+  dmp.diff_cleanupSemantic(diffs);
+  return {
+    diffs,
+    stats: countOps(diffs)
+  };
+};
+
 export const DiffView: React.FC<{
   before: string;
   after: string;
   mode: "inline" | "side";
 }> = ({ before, after, mode }) => {
-  const dmp = new diff_match_patch();
-  const diffs = dmp.diff_main(before, after);
-  dmp.diff_cleanupSemantic(diffs);
-  const stats = countOps(diffs);
+  const { diffs, stats } = React.useMemo(
+    () => computeDiff(before, after),
+    [before, after]
+  );
 
   return (
     <div>
