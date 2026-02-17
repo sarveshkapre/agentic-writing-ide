@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { buildHistory } from "../lib/history";
 import { buildSnippet, searchText, type Snippet } from "../lib/search";
+import { useModalFocusTrap } from "../lib/useModalFocusTrap";
 import type { Branch, Revision } from "../state/types";
 
 type Scope = "branch" | "all";
@@ -77,22 +78,14 @@ export const SearchModal: React.FC<{
   onJumpRevision
 }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const [scope, setScope] = useState<Scope>("branch");
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  useModalFocusTrap({ container: modalRef, onClose });
 
   const revisionList = useMemo(() => {
     if (scope === "branch") {
@@ -137,6 +130,7 @@ export const SearchModal: React.FC<{
   return (
     <div className="modal-overlay" role="presentation" onMouseDown={onClose}>
       <div
+        ref={modalRef}
         className="modal search-modal"
         role="dialog"
         aria-modal="true"

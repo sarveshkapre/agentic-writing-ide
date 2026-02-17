@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useMemo, useRef } from "react";
+import { useModalFocusTrap } from "../lib/useModalFocusTrap";
 
 type Shortcut = {
   keys: string;
@@ -8,7 +9,7 @@ type Shortcut = {
 export const ShortcutsModal: React.FC<{
   onClose: () => void;
 }> = ({ onClose }) => {
-  const primaryRef = useRef<HTMLButtonElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
 
   const shortcuts = useMemo<Shortcut[]>(
     () => [
@@ -29,24 +30,12 @@ export const ShortcutsModal: React.FC<{
     []
   );
 
-  useEffect(() => {
-    primaryRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  useModalFocusTrap({ container: modalRef, onClose });
 
   return (
     <div className="modal-overlay" role="presentation" onMouseDown={onClose}>
       <div
+        ref={modalRef}
         className="modal shortcuts-modal"
         role="dialog"
         aria-modal="true"
@@ -64,7 +53,7 @@ export const ShortcutsModal: React.FC<{
           ))}
         </div>
         <div className="modal-actions">
-          <button ref={primaryRef} type="button" onClick={onClose}>
+          <button type="button" onClick={onClose}>
             Close
           </button>
         </div>

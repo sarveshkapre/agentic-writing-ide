@@ -1,5 +1,21 @@
 # Incidents
 
+## 2026-02-17 — Lint gate failure from missing hook dependency
+- Severity: low
+- Impact: `npm run check` failed during lint, blocking release verification until fixed.
+- Detection:
+  - ESLint `react-hooks/exhaustive-deps` warning in `src/App.tsx` for `handleApplyMerge`.
+- Root cause:
+  - `handleApplyMerge` read `doc.branches` but omitted it from the `useCallback` dependency list.
+- Fix:
+  - Added `doc.branches` to the dependency array.
+- Prevention rules:
+  - Re-run full `npm run check` after any callback logic change touching additional state branches.
+  - Treat eslint hook warnings as hard blockers before commit/push.
+- Evidence:
+  - `src/App.tsx`
+  - `npm run check` (fail then pass)
+
 ## 2026-02-11 — E2E smoke locator race after selector migration
 - Severity: low
 - Impact: Local `npm run e2e:smoke` failed once with a timeout while reading the editor value; risk of flaky CI if left unresolved.

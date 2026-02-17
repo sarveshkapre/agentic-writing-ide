@@ -1,5 +1,48 @@
 # Project Memory
 
+## Entry 2026-02-17 — Command palette, find/replace, per-document preferences, and merge safety
+- Decision: Ship a 10-commit improvement series focused on keyboard-first workflows, editor text operations, document-scoped defaults, and safer merge execution.
+- Why: These are high-frequency writing workflows and directly close longstanding backlog gaps (find/replace, command palette, merge confidence, modal accessibility).
+- Evidence:
+  - `src/ui/CommandPalette.tsx`
+  - `src/lib/findReplace.ts`
+  - `src/ui/FindReplaceModal.tsx`
+  - `src/state/types.ts`
+  - `src/state/store.tsx`
+  - `src/lib/mergeMetrics.ts`
+  - `src/lib/hash.ts`
+  - `src/lib/useModalFocusTrap.ts`
+  - `tests/findReplace.test.ts`
+  - `tests/mergeMetrics.test.ts`
+  - `tests/hash.test.ts`
+  - `tests/app.smoke.test.tsx`
+- Commit: `pending (current series finalized in this session)`
+- Confidence: high
+- Trust label: verified-local
+
+## Entry 2026-02-17 — Current-state market scan refresh
+- Decision: Prioritize command palette and find/replace as baseline PMF features, with accessibility-grade modal behavior and stronger merge confidence for long-form editing.
+- Why: Mature writing and editor products keep keyboard command access and robust find/replace as table-stakes, while merge/revision confidence remains a trust differentiator.
+- Evidence:
+  - VS Code command palette docs: https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette
+  - Typora find/replace docs: https://support.typora.io/Find-and-Replace/
+  - Google Docs find and replace docs: https://support.google.com/docs/answer/62754
+  - Notion keyboard slash command docs: https://www.notion.com/help/guides/using-basic-blocks
+- Commit: `(research-informed prioritization in this session)`
+- Confidence: medium
+- Trust label: untrusted
+
+## Verification Evidence (2026-02-17)
+- `npm run check` (fail; eslint warning `react-hooks/exhaustive-deps` in `src/App.tsx` for missing `doc.branches` dependency)
+- `npm run check` (pass)
+- `npm run lint:workflows` (pass)
+- `npm run e2e:smoke` (pass)
+- `npm run test -- tests/app.smoke.test.tsx` (pass)
+- `npm run test -- tests/findReplace.test.ts` (pass)
+- `npm run test -- tests/mergeMetrics.test.ts` (pass)
+- `npm run test -- tests/hash.test.ts` (pass)
+- `npm run typecheck` (pass)
+
 ## Entry 2026-02-11 — Markdown export + automation selector hardening
 - Decision: Add Markdown export (`.md`) with optional frontmatter metadata (`title`, `label`, `createdAt`), add stable `data-testid` attributes for critical flows, and migrate E2E smoke to those selectors.
 - Why: Markdown export improves interoperability for local-first workflows; stable selectors reduce E2E brittleness and make future automation safer.

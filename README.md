@@ -7,9 +7,12 @@ Runs a draft through a multi-stage pipeline (draft → critique → revise → p
 ## Features
 - Document editor with live markdown preview.
 - Agent pipeline that creates revisions with rationale (optional local LLM via Ollama, or stub).
-- Branchable revision history with filters and three-way merge preview/resolution.
+- Branchable revision history with filters and three-way merge preview/resolution + merge impact summary.
 - Inline or side-by-side diffs.
 - Multi-document library (create/switch/rename/delete) with local persistence.
+- Command palette (`Cmd/Ctrl + K`) for keyboard-first workflows.
+- In-editor find/replace (`Cmd/Ctrl + H`) with next/previous navigation, replace, and replace-all.
+- Per-document preferences for export theme, markdown mode, and target word count.
 - Revision labels (named versions) for milestones and filtering.
 - Focus mode + typewriter mode toggles for distraction-free drafting.
 - Local persistence with JSON import/export.
@@ -31,6 +34,8 @@ npm run e2e:smoke
 ## Keyboard shortcuts
 - Cmd/Ctrl + 1-4: run pipeline stages
 - Cmd/Ctrl + S: commit edit
+- Cmd/Ctrl + K: command palette
+- Cmd/Ctrl + H: find and replace
 - Cmd/Ctrl + F: search
 - Cmd/Ctrl + Shift + E: export JSON
 - Cmd/Ctrl + Shift + H: export HTML

@@ -691,7 +691,14 @@ export const App: React.FC = () => {
         ? `Merge completed (${mergePreview.conflictCount} conflicts resolved).`
         : "Merge completed."
     );
-  }, [currentBranch.headRevisionId, dispatch, doc.revisions, mergePreview, pushToast]);
+  }, [
+    currentBranch.headRevisionId,
+    dispatch,
+    doc.branches,
+    doc.revisions,
+    mergePreview,
+    pushToast
+  ]);
 
   const handleExport = useCallback(() => {
     const data = exportState(state);

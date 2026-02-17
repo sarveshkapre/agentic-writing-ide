@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import type { FindReplaceOptions } from "../lib/findReplace";
+import { useModalFocusTrap } from "../lib/useModalFocusTrap";
 
 export const FindReplaceModal: React.FC<{
   query: string;
@@ -31,18 +32,17 @@ export const FindReplaceModal: React.FC<{
   onClose
 }) => {
   const queryRef = useRef<HTMLInputElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     queryRef.current?.focus();
     queryRef.current?.select();
   }, []);
 
+  useModalFocusTrap({ container: modalRef, onClose });
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
       if (event.key === "Enter") {
         event.preventDefault();
         if (event.shiftKey) {
@@ -54,7 +54,7 @@ export const FindReplaceModal: React.FC<{
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose, onNext, onPrevious]);
+  }, [onNext, onPrevious]);
 
   const countLabel =
     totalMatches > 0 ? `${activeMatchNumber} / ${totalMatches}` : "No matches";
@@ -62,6 +62,7 @@ export const FindReplaceModal: React.FC<{
   return (
     <div className="modal-overlay" role="presentation" onMouseDown={onClose}>
       <div
+        ref={modalRef}
         className="modal find-replace-modal"
         role="dialog"
         aria-modal="true"

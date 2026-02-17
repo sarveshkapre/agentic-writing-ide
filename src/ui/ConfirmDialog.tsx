@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
+import { useModalFocusTrap } from "../lib/useModalFocusTrap";
 
 export type ConfirmDialogAction = {
   id: string;
@@ -13,26 +14,14 @@ export const ConfirmDialog: React.FC<{
   actions: ConfirmDialogAction[];
   onClose: () => void;
 }> = ({ title, description, actions, onClose }) => {
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const primaryRef = useRef<HTMLButtonElement | null>(null);
-
-  useEffect(() => {
-    primaryRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  useModalFocusTrap({ container: modalRef, onClose });
 
   return (
     <div className="modal-overlay" role="presentation" onMouseDown={onClose}>
       <div
+        ref={modalRef}
         className="modal"
         role="dialog"
         aria-modal="true"
@@ -61,4 +50,3 @@ export const ConfirmDialog: React.FC<{
     </div>
   );
 };
-
