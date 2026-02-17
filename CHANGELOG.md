@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- CI now runs on `self-hosted` runners for all jobs (`build`, `e2e-smoke`, `gitleaks`, `dependency-review`, `codeql`).
+- CI self-hosted hardening: `build` job now installs Go (required by workflow lint), and `gitleaks` job installs/runs `gitleaks` via Go module path `github.com/zricethezav/gitleaks/v8`.
+- Added self-hosted runner setup and validation guide: `docs/SELF_HOSTED_RUNNER.md`.
 - Added Markdown export (`.md`) with optional frontmatter metadata (`title`, `label`, `createdAt`) plus a Markdown export mode selector.
 - Added stable `data-testid` attributes across core edit/commit/export/import/branch/merge/history flows and migrated E2E smoke selectors to them.
 - Performance: memoized diff computations in `DiffView` to avoid repeated recalculation on unrelated UI renders.

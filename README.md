@@ -31,6 +31,11 @@ npm run lint:workflows
 npm run e2e:smoke
 ```
 
+## GitHub Actions (Self-hosted)
+- CI is configured to run on `self-hosted` runners only.
+- Runner setup, prerequisites, and registration steps:
+  - `docs/SELF_HOSTED_RUNNER.md`
+
 ## Keyboard shortcuts
 - Cmd/Ctrl + 1-4: run pipeline stages
 - Cmd/Ctrl + S: commit edit

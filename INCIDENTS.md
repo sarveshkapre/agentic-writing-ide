@@ -1,5 +1,22 @@
 # Incidents
 
+## 2026-02-17 — Self-hosted gitleaks install path mismatch
+- Severity: low
+- Impact: Local self-hosted CI validation failed at gitleaks install, which would have failed the `gitleaks` workflow job.
+- Detection:
+  - `go install github.com/gitleaks/gitleaks/v8@v8.28.0` failed with module path mismatch.
+- Root cause:
+  - Workflow used a deprecated/incorrect module path (`github.com/gitleaks/gitleaks/v8`) instead of the module-declared path (`github.com/zricethezav/gitleaks/v8`).
+- Fix:
+  - Updated workflow and self-hosted setup docs to use `github.com/zricethezav/gitleaks/v8@v8.28.0`.
+- Prevention rules:
+  - Validate Go-installed workflow tools locally before push.
+  - Prefer module-declared paths from upstream `go.mod` for install commands.
+- Evidence:
+  - `.github/workflows/ci.yml`
+  - `docs/SELF_HOSTED_RUNNER.md`
+  - local validation command in `PROJECT_MEMORY.md`
+
 ## 2026-02-17 — Lint gate failure from missing hook dependency
 - Severity: low
 - Impact: `npm run check` failed during lint, blocking release verification until fixed.

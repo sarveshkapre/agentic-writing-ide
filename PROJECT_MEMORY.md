@@ -1,5 +1,27 @@
 # Project Memory
 
+## Entry 2026-02-17 — GitHub Actions migration to self-hosted runners
+- Decision: Migrate all CI workflows/jobs to `runs-on: self-hosted`, add runner-safe prerequisites in workflows, and document repository-level runner setup/validation.
+- Why: Repository billing constraints block GitHub-hosted minutes; self-hosted execution keeps CI operational without touching billing settings.
+- Evidence:
+  - `.github/workflows/ci.yml`
+  - `.github/workflows/codeql.yml`
+  - `docs/SELF_HOSTED_RUNNER.md`
+  - `README.md`
+  - `CHANGELOG.md`
+- Commit: `pending (current session)`
+- Confidence: high
+- Trust label: verified-local
+
+## Verification Evidence (2026-02-17, self-hosted migration)
+- `npm install` (pass)
+- `npm run lint:workflows` (pass)
+- `npm run check` (pass)
+- `npx playwright install chromium` (pass)
+- `npm run e2e:smoke` (pass)
+- `mkdir -p .tmp/bin && GOBIN="$(pwd)/.tmp/bin" go install github.com/zricethezav/gitleaks/v8@v8.28.0 && "$(pwd)/.tmp/bin/gitleaks" git --redact --no-banner --verbose` (pass; no leaks found)
+- `rg -n "runs-on:" .github/workflows/*.yml` (pass; all jobs set to `self-hosted`)
+
 ## Entry 2026-02-17 — Command palette, find/replace, per-document preferences, and merge safety
 - Decision: Ship a 10-commit improvement series focused on keyboard-first workflows, editor text operations, document-scoped defaults, and safer merge execution.
 - Why: These are high-frequency writing workflows and directly close longstanding backlog gaps (find/replace, command palette, merge confidence, modal accessibility).

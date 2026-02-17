@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,6 +17,11 @@ jobs:
         with:
           node-version: 20
           cache: npm
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
 
       - name: Install
         run: npm install
@@ -28,7 +33,7 @@ jobs:
         run: npm run check
 
   e2e-smoke:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build
     steps:
       - name: Checkout
@@ -47,26 +52,37 @@ jobs:
         run: npm run build
 
       - name: Install Playwright (Chromium)
-        run: npx playwright install --with-deps chromium
+        run: |
+          if [[ "${RUNNER_OS}" == "Linux" ]]; then
+            npx playwright install chromium
+          else
+            npx playwright install chromium
+          fi
 
       - name: E2E smoke
         run: npm run e2e:smoke
 
   gitleaks:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Install Gitleaks
+        run: |
+          GOBIN="${RUNNER_TEMP}/bin" go install github.com/zricethezav/gitleaks/v8@v8.28.0
+          echo "${RUNNER_TEMP}/bin" >> "${GITHUB_PATH}"
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gitleaks git --redact --no-banner --verbose
 
   dependency-review:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4
