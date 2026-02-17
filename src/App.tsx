@@ -20,6 +20,7 @@ import {
   type MergeResolution
 } from "./lib/merge";
 import { summarizeMerge } from "./lib/mergeMetrics";
+import { hashText } from "./lib/hash";
 import { countWords, formatReadingTime } from "./lib/metrics";
 import { printHtml } from "./lib/print";
 import { getTemplateById, templates } from "./lib/templates";
@@ -80,6 +81,8 @@ type MergePreview = {
   baseContent: string;
   targetContent: string;
   sourceContent: string;
+  targetHash: string;
+  sourceHash: string;
   resolution: MergeResolution;
   mergedContent: string;
   conflictCount: number;
@@ -236,6 +239,8 @@ export const App: React.FC = () => {
       baseContent,
       targetContent,
       sourceContent,
+      targetHash,
+      sourceHash,
       resolution
     }: Omit<MergePreview, "mergedContent" | "conflictCount">): MergePreview => {
       const merged = mergeThreeWay({
@@ -257,6 +262,8 @@ export const App: React.FC = () => {
         baseContent,
         targetContent,
         sourceContent,
+        targetHash,
+        sourceHash,
         resolution,
         mergedContent: merged.content,
         conflictCount: merged.conflicts.length
@@ -590,6 +597,8 @@ export const App: React.FC = () => {
         baseContent,
         targetContent: targetHead.content,
         sourceContent: sourceHead.content,
+        targetHash: hashText(targetHead.content),
+        sourceHash: hashText(sourceHead.content),
         resolution: "manual"
       })
     );
@@ -620,6 +629,8 @@ export const App: React.FC = () => {
           baseContent: mergePreview.baseContent,
           targetContent: mergePreview.targetContent,
           sourceContent: mergePreview.sourceContent,
+          targetHash: mergePreview.targetHash,
+          sourceHash: mergePreview.sourceHash,
           resolution
         })
       );
@@ -631,10 +642,30 @@ export const App: React.FC = () => {
     if (!mergePreview) return;
 
     const sourceHead = doc.revisions[mergePreview.sourceHeadId];
+    const sourceBranch = doc.branches[mergePreview.sourceBranchId];
     if (!sourceHead) return;
+    if (!sourceBranch) return;
 
     if (currentBranch.headRevisionId !== mergePreview.targetHeadId) {
       pushToast("error", "Merge preview is stale. Re-run preview.");
+      return;
+    }
+    if (sourceBranch.headRevisionId !== mergePreview.sourceHeadId) {
+      pushToast("error", "Source branch changed after preview. Re-run preview.");
+      return;
+    }
+    if (
+      hashText(doc.revisions[mergePreview.targetHeadId]?.content ?? "") !==
+      mergePreview.targetHash
+    ) {
+      pushToast("error", "Current branch content changed after preview. Re-run preview.");
+      return;
+    }
+    if (
+      hashText(doc.revisions[mergePreview.sourceHeadId]?.content ?? "") !==
+      mergePreview.sourceHash
+    ) {
+      pushToast("error", "Source branch content changed after preview. Re-run preview.");
       return;
     }
 
