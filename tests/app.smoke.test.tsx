@@ -306,6 +306,24 @@ describe("App", () => {
     expect(screen.queryByText(/keyboard shortcuts/i)).not.toBeInTheDocument();
   });
 
+  it("runs actions from command palette", () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /commands/i }));
+    expect(screen.getByRole("heading", { name: /command palette/i })).toBeInTheDocument();
+
+    const input = screen.getByRole("textbox", { name: /search commands/i });
+    fireEvent.change(input, { target: { value: "focus mode" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(screen.queryByText(/command palette/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /preview/i })).not.toBeInTheDocument();
+  });
+
   it("toggles focus mode and typewriter mode", () => {
     render(
       <StoreProvider>

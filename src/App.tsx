@@ -771,6 +771,96 @@ export const App: React.FC = () => {
     }
   };
 
+  const commandPaletteActions = useMemo(
+    () => [
+      {
+        id: "search",
+        label: "Search revisions",
+        description: "Open full-text search across working copy and history.",
+        shortcut: "Cmd/Ctrl + F",
+        onSelect: () => setShowSearch(true)
+      },
+      {
+        id: "outline",
+        label: "Generate outline",
+        description: "Create a structured draft outline from the project brief.",
+        shortcut: "Cmd/Ctrl + Shift + O",
+        onSelect: () => handleGenerateOutline()
+      },
+      {
+        id: "commit",
+        label: "Commit changes",
+        description: "Save current working edits as a revision.",
+        shortcut: "Cmd/Ctrl + S",
+        onSelect: () => {
+          if (!isDirty) {
+            pushToast("info", "No uncommitted edits.");
+            return;
+          }
+          handleCommitDraft();
+        }
+      },
+      {
+        id: "run-draft",
+        label: "Run Draft stage",
+        description: "Structure raw ideas into a starter draft.",
+        shortcut: "Cmd/Ctrl + 1",
+        onSelect: () => void handleRunStage("draft")
+      },
+      {
+        id: "run-critique",
+        label: "Run Critique stage",
+        description: "Find clarity gaps and missing support.",
+        shortcut: "Cmd/Ctrl + 2",
+        onSelect: () => void handleRunStage("critique")
+      },
+      {
+        id: "run-revise",
+        label: "Run Revise stage",
+        description: "Tighten phrasing and improve flow.",
+        shortcut: "Cmd/Ctrl + 3",
+        onSelect: () => void handleRunStage("revise")
+      },
+      {
+        id: "run-polish",
+        label: "Run Polish stage",
+        description: "Increase scannability and finish quality.",
+        shortcut: "Cmd/Ctrl + 4",
+        onSelect: () => void handleRunStage("polish")
+      },
+      {
+        id: "toggle-focus",
+        label: "Toggle focus mode",
+        description: "Hide side panels for distraction-free writing.",
+        shortcut: "Cmd/Ctrl + Shift + F",
+        onSelect: () => dispatch({ type: "TOGGLE_FOCUS_MODE" })
+      },
+      {
+        id: "toggle-typewriter",
+        label: "Toggle typewriter mode",
+        description: "Keep cursor centered while writing.",
+        shortcut: "Cmd/Ctrl + Shift + T",
+        onSelect: () => dispatch({ type: "TOGGLE_TYPEWRITER_MODE" })
+      },
+      {
+        id: "export-markdown",
+        label: "Export Markdown",
+        description: "Download current draft as markdown.",
+        shortcut: "Cmd/Ctrl + Shift + M",
+        onSelect: () => handleExportMarkdown()
+      }
+    ],
+    [
+      dispatch,
+      handleCommitDraft,
+      handleExportMarkdown,
+      handleGenerateOutline,
+      handleRunStage,
+      isDirty,
+      pushToast
+    ]
+  );
+
   useEffect(() => {
     // Avoid stale model lists/test statuses when switching providers.
     setLlmModels([]);
@@ -864,7 +954,10 @@ export const App: React.FC = () => {
         <ShortcutsModal onClose={() => setShowShortcuts(false)} />
       ) : null}
       {showCommandPalette ? (
-        <CommandPalette onClose={() => setShowCommandPalette(false)} />
+        <CommandPalette
+          actions={commandPaletteActions}
+          onClose={() => setShowCommandPalette(false)}
+        />
       ) : null}
       {showSearch ? (
         <SearchModal

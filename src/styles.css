@@ -599,6 +599,52 @@ button:disabled {
   width: min(640px, 100%);
 }
 
+.command-palette-list {
+  display: grid;
+  gap: 0.5rem;
+  max-height: min(52vh, 460px);
+  overflow: auto;
+}
+
+.command-palette-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--ink);
+  box-shadow: none;
+  text-align: left;
+  padding: 0.7rem 0.8rem;
+}
+
+.command-palette-item p {
+  margin: 0.3rem 0 0;
+}
+
+.command-palette-item code {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.35rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.command-palette-item.active {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(12, 107, 104, 0.15);
+}
+
+.command-palette-item:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(12, 107, 104, 0.3);
+}
+
 .modal h3 {
   margin-top: 0;
   font-family: "Fraunces", serif;
@@ -1021,6 +1067,7 @@ button:disabled {
   .panel,
   .pipeline-item,
   .history-item,
+  .command-palette-item,
   .editor textarea,
   .field input,
   .field select,
@@ -1037,6 +1084,10 @@ button:disabled {
   .template-picker,
   .metric-card {
     background: rgba(30, 36, 39, 0.92);
+  }
+
+  .command-palette-item code {
+    color: var(--ink-soft);
   }
 
   .modal {
