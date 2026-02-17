@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useModalFocusTrap } from "../lib/useModalFocusTrap";
 
 export type CommandPaletteAction = {
   id: string;
@@ -13,6 +14,7 @@ export const CommandPalette: React.FC<{
   onClose: () => void;
 }> = ({ actions, onClose }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -33,12 +35,10 @@ export const CommandPalette: React.FC<{
     setActiveIndex(0);
   }, [query]);
 
+  useModalFocusTrap({ container: modalRef, onClose });
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
       if (event.key === "ArrowDown") {
         event.preventDefault();
         if (filteredActions.length === 0) return;
@@ -66,6 +66,7 @@ export const CommandPalette: React.FC<{
   return (
     <div className="modal-overlay" role="presentation" onMouseDown={onClose}>
       <div
+        ref={modalRef}
         className="modal command-palette-modal"
         role="dialog"
         aria-modal="true"
