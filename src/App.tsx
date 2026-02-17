@@ -19,6 +19,7 @@ import {
   mergeThreeWay,
   type MergeResolution
 } from "./lib/merge";
+import { summarizeMerge } from "./lib/mergeMetrics";
 import { countWords, formatReadingTime } from "./lib/metrics";
 import { printHtml } from "./lib/print";
 import { getTemplateById, templates } from "./lib/templates";
@@ -160,6 +161,15 @@ export const App: React.FC = () => {
     [findOptions, findQuery, workingContent]
   );
   const activeFindMatch = findMatchesInWorking[activeFindMatchIndex] ?? null;
+  const mergeSummary = useMemo(() => {
+    if (!mergePreview) return null;
+    return summarizeMerge({
+      target: mergePreview.targetContent,
+      source: mergePreview.sourceContent,
+      merged: mergePreview.mergedContent,
+      conflicts: mergePreview.conflictCount
+    });
+  }, [mergePreview]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -1448,6 +1458,38 @@ export const App: React.FC = () => {
                   ? `Potential conflicts: ${mergePreview.conflictCount}`
                   : "No conflicts detected."}
               </p>
+              {mergeSummary ? (
+                <div className="merge-summary-grid">
+                  <div className="metric-card">
+                    <span className="metric-label">Target lines</span>
+                    <strong className="metric-value">{mergeSummary.targetLines}</strong>
+                  </div>
+                  <div className="metric-card">
+                    <span className="metric-label">Source lines</span>
+                    <strong className="metric-value">{mergeSummary.sourceLines}</strong>
+                  </div>
+                  <div className="metric-card">
+                    <span className="metric-label">Merged lines</span>
+                    <strong className="metric-value">{mergeSummary.mergedLines}</strong>
+                  </div>
+                  <div className="metric-card">
+                    <span className="metric-label">Delta vs target</span>
+                    <strong className="metric-value">
+                      {mergeSummary.changedFromTarget}
+                    </strong>
+                  </div>
+                  <div className="metric-card">
+                    <span className="metric-label">Delta vs source</span>
+                    <strong className="metric-value">
+                      {mergeSummary.changedFromSource}
+                    </strong>
+                  </div>
+                  <div className="metric-card">
+                    <span className="metric-label">Conflicts</span>
+                    <strong className="metric-value">{mergeSummary.conflicts}</strong>
+                  </div>
+                </div>
+              ) : null}
               <label className="field">
                 <span>Conflict resolution</span>
                 <select

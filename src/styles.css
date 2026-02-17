@@ -404,6 +404,17 @@ button.primary {
   margin-bottom: 0.6rem;
 }
 
+.merge-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0.4rem 0 0.8rem;
+}
+
+.merge-summary-grid .metric-card {
+  padding: 0.65rem;
+}
+
 .metric-card {
   display: grid;
   gap: 0.4rem;
@@ -1044,6 +1055,10 @@ button:disabled {
 
   .metrics-grid {
     grid-template-columns: 1fr;
+  }
+
+  .merge-summary-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .find-replace-grid {
