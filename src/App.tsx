@@ -18,6 +18,7 @@ import { exportState, importState, saveState } from "./state/persistence";
 import { useStore } from "./state/useStore";
 import type { ProjectBrief, Revision, StageId } from "./state/types";
 import { BriefPanel } from "./ui/BriefPanel";
+import { CommandPalette } from "./ui/CommandPalette";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Editor, type EditorApi } from "./ui/Editor";
 import { HistoryPanel } from "./ui/HistoryPanel";
@@ -93,6 +94,7 @@ export const App: React.FC = () => {
   const [runningStage, setRunningStage] = useState<StageId | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [markdownExportMode, setMarkdownExportMode] = useState<
@@ -804,6 +806,10 @@ export const App: React.FC = () => {
         event.preventDefault();
         setShowSearch(true);
       }
+      if (!event.shiftKey && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setShowCommandPalette(true);
+      }
       if (event.shiftKey && event.key.toLowerCase() === "e") {
         event.preventDefault();
         handleExport();
@@ -857,6 +863,9 @@ export const App: React.FC = () => {
       {showShortcuts ? (
         <ShortcutsModal onClose={() => setShowShortcuts(false)} />
       ) : null}
+      {showCommandPalette ? (
+        <CommandPalette onClose={() => setShowCommandPalette(false)} />
+      ) : null}
       {showSearch ? (
         <SearchModal
           branch={currentBranch}
@@ -883,6 +892,13 @@ export const App: React.FC = () => {
         </div>
         <div className="topbar-actions">
           <span className="status">{saveStatus}</span>
+          <button
+            className="ghost"
+            type="button"
+            onClick={() => setShowCommandPalette(true)}
+          >
+            Commands
+          </button>
           <button className="ghost" type="button" onClick={() => setShowSearch(true)}>
             Search
           </button>
@@ -1304,6 +1320,7 @@ export const App: React.FC = () => {
               <h3>Shortcuts</h3>
               <p className="muted">Cmd/Ctrl + 1-4: run stages</p>
               <p className="muted">Cmd/Ctrl + S: commit edit</p>
+              <p className="muted">Cmd/Ctrl + K: command palette</p>
               <p className="muted">Cmd/Ctrl + F: search</p>
               <p className="muted">Cmd/Ctrl + Shift + E: export JSON</p>
               <p className="muted">Cmd/Ctrl + Shift + H: export HTML</p>

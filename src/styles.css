@@ -595,6 +595,10 @@ button:disabled {
   box-shadow: 0 20px 60px rgba(11, 26, 31, 0.22);
 }
 
+.command-palette-modal {
+  width: min(640px, 100%);
+}
+
 .modal h3 {
   margin-top: 0;
   font-family: "Fraunces", serif;
