@@ -28,11 +28,20 @@ export type ProjectBrief = {
   templateId: string;
 };
 
+export type MarkdownExportMode = "plain" | "frontmatter";
+
+export type DocumentPreferences = {
+  exportThemeId: string;
+  markdownExportMode: MarkdownExportMode;
+  targetWordCount: number;
+};
+
 export type DocumentModel = {
   id: string;
   title: string;
   currentBranchId: string;
   brief: ProjectBrief;
+  preferences: DocumentPreferences;
   branches: Record<string, Branch>;
   revisions: Record<string, Revision>;
 };

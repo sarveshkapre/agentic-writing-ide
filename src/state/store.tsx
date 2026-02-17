@@ -4,6 +4,7 @@ import { createId } from "../lib/id";
 import type {
   AppState,
   Branch,
+  DocumentPreferences,
   DocumentModel,
   DocumentSession,
   ProjectBrief,
@@ -19,6 +20,14 @@ const STAGE_ORDER: StageId[] = ["draft", "critique", "revise", "polish"];
 const DEFAULT_OLLAMA_URL = "http://localhost:11434";
 const DEFAULT_OPENAI_COMPAT_URL = "http://localhost:1234/v1";
 const DEFAULT_EXPORT_THEME_ID = "paper";
+const DEFAULT_MARKDOWN_EXPORT_MODE: DocumentPreferences["markdownExportMode"] =
+  "plain";
+
+const defaultDocumentPreferences = (): DocumentPreferences => ({
+  exportThemeId: DEFAULT_EXPORT_THEME_ID,
+  markdownExportMode: DEFAULT_MARKDOWN_EXPORT_MODE,
+  targetWordCount: defaultBrief().length
+});
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -47,6 +56,7 @@ const createInitialDocument = (
     title,
     currentBranchId: mainBranch.id,
     brief: defaultBrief(),
+    preferences: defaultDocumentPreferences(),
     branches: { [mainBranch.id]: mainBranch },
     revisions: { [baseRevision.id]: baseRevision }
   };
@@ -160,12 +170,31 @@ const normalizeDocumentModel = (raw: unknown): DocumentModel | null => {
   const brief = normalizeBrief(
     isRecord(raw.brief) ? (raw.brief as Partial<ProjectBrief>) : undefined
   );
+  const defaultPreferences = defaultDocumentPreferences();
+  const preferencesRaw = isRecord(raw.preferences) ? raw.preferences : {};
+  const preferences: DocumentPreferences = {
+    exportThemeId:
+      typeof preferencesRaw.exportThemeId === "string" &&
+      preferencesRaw.exportThemeId.trim().length > 0
+        ? preferencesRaw.exportThemeId
+        : defaultPreferences.exportThemeId,
+    markdownExportMode:
+      preferencesRaw.markdownExportMode === "frontmatter"
+        ? "frontmatter"
+        : defaultPreferences.markdownExportMode,
+    targetWordCount:
+      typeof preferencesRaw.targetWordCount === "number" &&
+      Number.isFinite(preferencesRaw.targetWordCount)
+        ? Math.max(0, Math.round(preferencesRaw.targetWordCount))
+        : brief.length
+  };
 
   return {
     id: raw.id,
     title: raw.title,
     currentBranchId: raw.currentBranchId,
     brief,
+    preferences,
     branches: branches as Record<string, Branch>,
     revisions: revisions as Record<string, Revision>
   };
@@ -316,6 +345,7 @@ export type Action =
   | { type: "UPDATE_CONTENT"; content: string }
   | { type: "UPDATE_TITLE"; title: string }
   | { type: "UPDATE_BRIEF"; brief: Partial<ProjectBrief> }
+  | { type: "UPDATE_DOCUMENT_PREFERENCES"; preferences: Partial<DocumentPreferences> }
   | { type: "ADD_REVISION"; revision: Revision }
   | { type: "UPDATE_REVISION_LABEL"; revisionId: string; label: string }
   | { type: "SELECT_REVISION"; revisionId: string }
@@ -399,6 +429,16 @@ const reducer = (state: AppState, action: Action): AppState => {
           }
         };
       });
+    case "UPDATE_DOCUMENT_PREFERENCES":
+      return updateActive(state, (doc) => ({
+        doc: {
+          ...doc,
+          preferences: {
+            ...doc.preferences,
+            ...action.preferences
+          }
+        }
+      }));
     case "ADD_REVISION":
       return updateActive(state, (doc, session) => {
         const revision = action.revision;
