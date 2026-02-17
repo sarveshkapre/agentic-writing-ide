@@ -114,9 +114,6 @@ export const App: React.FC = () => {
     wholeWord: false
   });
   const [activeFindMatchIndex, setActiveFindMatchIndex] = useState(0);
-  const [markdownExportMode, setMarkdownExportMode] = useState<
-    "plain" | "frontmatter"
-  >("plain");
   const editorApiRef = useRef<EditorApi | null>(null);
   const [cursorIndex, setCursorIndex] = useState(0);
   const [pendingDeleteDocumentId, setPendingDeleteDocumentId] = useState<string | null>(
@@ -141,7 +138,8 @@ export const App: React.FC = () => {
   const llmEnabled = state.settings.llm.enabled;
   const focusMode = state.settings.ui.focusMode;
   const typewriterMode = state.settings.ui.typewriterMode;
-  const exportThemeId = state.settings.ui.exportThemeId;
+  const exportThemeId = doc.preferences.exportThemeId;
+  const markdownExportMode = doc.preferences.markdownExportMode;
   const currentBranch = doc.branches[doc.currentBranchId];
   const compareRevision = session.compareRevisionId
     ? doc.revisions[session.compareRevisionId]
@@ -151,7 +149,7 @@ export const App: React.FC = () => {
 
   const wordCount = useMemo(() => countWords(workingContent), [workingContent]);
   const readingTime = useMemo(() => formatReadingTime(wordCount), [wordCount]);
-  const targetWords = brief.length;
+  const targetWords = doc.preferences.targetWordCount;
   const progress = targetWords > 0 ? Math.min(wordCount / targetWords, 1) : 0;
   const lastUpdated = useMemo(
     () => new Date(selectedRevision.createdAt).toLocaleString(),
@@ -278,6 +276,12 @@ export const App: React.FC = () => {
   const updateBrief = useCallback(
     (patch: Partial<ProjectBrief>) => {
       dispatch({ type: "UPDATE_BRIEF", brief: patch });
+      if (typeof patch.length === "number" && Number.isFinite(patch.length)) {
+        dispatch({
+          type: "UPDATE_DOCUMENT_PREFERENCES",
+          preferences: { targetWordCount: Math.max(0, Math.round(patch.length)) }
+        });
+      }
     },
     [dispatch]
   );
@@ -307,6 +311,14 @@ export const App: React.FC = () => {
         type: "UPDATE_BRIEF",
         brief: { ...template.brief, templateId: template.id }
       });
+      if (typeof template.brief.length === "number") {
+        dispatch({
+          type: "UPDATE_DOCUMENT_PREFERENCES",
+          preferences: {
+            targetWordCount: Math.max(0, Math.round(template.brief.length))
+          }
+        });
+      }
     },
     [commitWorkingCopy, dispatch, isDirty, selectedRevision.id]
   );
@@ -1200,8 +1212,8 @@ export const App: React.FC = () => {
               value={exportThemeId}
               onChange={(event) =>
                 dispatch({
-                  type: "UPDATE_EXPORT_THEME",
-                  themeId: event.target.value
+                  type: "UPDATE_DOCUMENT_PREFERENCES",
+                  preferences: { exportThemeId: event.target.value }
                 })
               }
             >
@@ -1219,7 +1231,12 @@ export const App: React.FC = () => {
               aria-label="Markdown export mode"
               value={markdownExportMode}
               onChange={(event) =>
-                setMarkdownExportMode(event.target.value as "plain" | "frontmatter")
+                dispatch({
+                  type: "UPDATE_DOCUMENT_PREFERENCES",
+                  preferences: {
+                    markdownExportMode: event.target.value as "plain" | "frontmatter"
+                  }
+                })
               }
             >
               <option value="plain">Markdown: Plain</option>
