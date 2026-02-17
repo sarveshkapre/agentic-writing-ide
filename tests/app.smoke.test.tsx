@@ -324,6 +324,31 @@ describe("App", () => {
     expect(screen.queryByRole("heading", { name: /preview/i })).not.toBeInTheDocument();
   });
 
+  it("finds and replaces text in the editor", () => {
+    render(
+      <StoreProvider>
+        <App />
+      </StoreProvider>
+    );
+
+    const editor = screen.getByRole("textbox", {
+      name: /markdown editor/i
+    }) as HTMLTextAreaElement;
+    expect(editor.value).toContain("Start writing here...");
+
+    fireEvent.click(screen.getByRole("button", { name: /find\/replace/i }));
+    fireEvent.change(screen.getByRole("textbox", { name: /^find$/i }), {
+      target: { value: "Start" }
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /replace with/i }), {
+      target: { value: "Begin" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: /replace all/i }));
+
+    expect(editor.value).toContain("Begin writing here...");
+    expect(editor.value).not.toContain("Start writing here...");
+  });
+
   it("toggles focus mode and typewriter mode", () => {
     render(
       <StoreProvider>

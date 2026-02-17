@@ -4,6 +4,14 @@ import { stages } from "./agents/pipeline";
 import { applyOutlineToContent, buildOutlineFromBrief, summarizeBrief } from "./lib/brief";
 import { DiffView } from "./lib/diff";
 import { exportThemes, wrapHtml, wrapMarkdown } from "./lib/exportDoc";
+import {
+  findMatches,
+  findNextMatch,
+  findPreviousMatch,
+  replaceAllMatches,
+  replaceSingleMatch,
+  type FindReplaceOptions
+} from "./lib/findReplace";
 import { createId } from "./lib/id";
 import { renderMarkdown } from "./lib/markdown";
 import {
@@ -21,6 +29,7 @@ import { BriefPanel } from "./ui/BriefPanel";
 import { CommandPalette } from "./ui/CommandPalette";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { Editor, type EditorApi } from "./ui/Editor";
+import { FindReplaceModal } from "./ui/FindReplaceModal";
 import { HistoryPanel } from "./ui/HistoryPanel";
 import { MarkdownPreview } from "./ui/MarkdownPreview";
 import { MetricsPanel } from "./ui/MetricsPanel";
@@ -96,7 +105,15 @@ export const App: React.FC = () => {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showFindReplace, setShowFindReplace] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [findQuery, setFindQuery] = useState("");
+  const [replaceQuery, setReplaceQuery] = useState("");
+  const [findOptions, setFindOptions] = useState<FindReplaceOptions>({
+    matchCase: false,
+    wholeWord: false
+  });
+  const [activeFindMatchIndex, setActiveFindMatchIndex] = useState(0);
   const [markdownExportMode, setMarkdownExportMode] = useState<
     "plain" | "frontmatter"
   >("plain");
@@ -140,6 +157,11 @@ export const App: React.FC = () => {
     () => new Date(selectedRevision.createdAt).toLocaleString(),
     [selectedRevision.createdAt]
   );
+  const findMatchesInWorking = useMemo(
+    () => findMatches(workingContent, findQuery, findOptions),
+    [findOptions, findQuery, workingContent]
+  );
+  const activeFindMatch = findMatchesInWorking[activeFindMatchIndex] ?? null;
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -155,6 +177,22 @@ export const App: React.FC = () => {
     editorApiRef.current?.jumpTo(pendingJump.index);
     setPendingJump(null);
   }, [pendingJump, session.selectedRevisionId]);
+
+  useEffect(() => {
+    setActiveFindMatchIndex((current) => {
+      if (findMatchesInWorking.length === 0) return 0;
+      return Math.min(current, findMatchesInWorking.length - 1);
+    });
+  }, [findMatchesInWorking.length]);
+
+  useEffect(() => {
+    if (!showFindReplace) return;
+    if (!activeFindMatch) return;
+    editorApiRef.current?.selectRange(
+      activeFindMatch.index,
+      activeFindMatch.index + activeFindMatch.length
+    );
+  }, [activeFindMatch, showFindReplace]);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -771,8 +809,125 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleOpenFindReplace = useCallback(() => {
+    const selection = editorApiRef.current?.getSelection();
+    const selectedText =
+      selection && selection.end > selection.start
+        ? workingContent.slice(selection.start, selection.end)
+        : "";
+    if (selectedText.trim().length > 0) {
+      setFindQuery(selectedText);
+    }
+    setShowFindReplace(true);
+  }, [workingContent]);
+
+  const jumpToNextFindMatch = useCallback(() => {
+    const from = editorApiRef.current?.getSelection().end ?? cursorIndex;
+    const next = findNextMatch(workingContent, findQuery, findOptions, from);
+    if (!next) {
+      pushToast("info", "No matches found.");
+      return;
+    }
+    const index = findMatchesInWorking.findIndex(
+      (match) => match.index === next.index && match.length === next.length
+    );
+    setActiveFindMatchIndex(index >= 0 ? index : 0);
+    editorApiRef.current?.selectRange(next.index, next.index + next.length);
+  }, [
+    cursorIndex,
+    findMatchesInWorking,
+    findOptions,
+    findQuery,
+    pushToast,
+    workingContent
+  ]);
+
+  const jumpToPreviousFindMatch = useCallback(() => {
+    const from = editorApiRef.current?.getSelection().start ?? cursorIndex;
+    const prev = findPreviousMatch(workingContent, findQuery, findOptions, from);
+    if (!prev) {
+      pushToast("info", "No matches found.");
+      return;
+    }
+    const index = findMatchesInWorking.findIndex(
+      (match) => match.index === prev.index && match.length === prev.length
+    );
+    setActiveFindMatchIndex(index >= 0 ? index : 0);
+    editorApiRef.current?.selectRange(prev.index, prev.index + prev.length);
+  }, [
+    cursorIndex,
+    findMatchesInWorking,
+    findOptions,
+    findQuery,
+    pushToast,
+    workingContent
+  ]);
+
+  const handleReplaceCurrentMatch = useCallback(() => {
+    if (!activeFindMatch) {
+      pushToast("info", "No active match to replace.");
+      return;
+    }
+
+    const replaced = replaceSingleMatch(workingContent, activeFindMatch, replaceQuery);
+    dispatch({ type: "UPDATE_CONTENT", content: replaced.text });
+
+    const nextMatches = findMatches(replaced.text, findQuery, findOptions);
+    if (nextMatches.length === 0) {
+      setActiveFindMatchIndex(0);
+      pushToast("success", "Replaced 1 match.");
+      return;
+    }
+
+    const next = findNextMatch(
+      replaced.text,
+      findQuery,
+      findOptions,
+      replaced.nextCursor
+    );
+    if (next) {
+      const index = nextMatches.findIndex(
+        (match) => match.index === next.index && match.length === next.length
+      );
+      setActiveFindMatchIndex(index >= 0 ? index : 0);
+      editorApiRef.current?.selectRange(next.index, next.index + next.length);
+    }
+    pushToast("success", "Replaced 1 match.");
+  }, [
+    activeFindMatch,
+    dispatch,
+    findOptions,
+    findQuery,
+    pushToast,
+    replaceQuery,
+    workingContent
+  ]);
+
+  const handleReplaceAllMatches = useCallback(() => {
+    const result = replaceAllMatches(
+      workingContent,
+      findQuery,
+      replaceQuery,
+      findOptions
+    );
+    if (result.replaced === 0) {
+      pushToast("info", "No matches found.");
+      return;
+    }
+    dispatch({ type: "UPDATE_CONTENT", content: result.text });
+    setActiveFindMatchIndex(0);
+    pushToast("success", `Replaced ${result.replaced} matches.`);
+  }, [dispatch, findOptions, findQuery, pushToast, replaceQuery, workingContent]);
+
   const commandPaletteActions = useMemo(
     () => [
+      {
+        id: "find-replace",
+        label: "Find and replace",
+        description: "Open in-editor find and replace.",
+        shortcut: "Cmd/Ctrl + H",
+        onSelect: () => handleOpenFindReplace()
+      },
       {
         id: "search",
         label: "Search revisions",
@@ -854,6 +1009,7 @@ export const App: React.FC = () => {
       dispatch,
       handleCommitDraft,
       handleExportMarkdown,
+      handleOpenFindReplace,
       handleGenerateOutline,
       handleRunStage,
       isDirty,
@@ -900,6 +1056,10 @@ export const App: React.FC = () => {
         event.preventDefault();
         setShowCommandPalette(true);
       }
+      if (!event.shiftKey && event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        handleOpenFindReplace();
+      }
       if (event.shiftKey && event.key.toLowerCase() === "e") {
         event.preventDefault();
         handleExport();
@@ -943,6 +1103,7 @@ export const App: React.FC = () => {
     handleExportHtml,
     handleExportMarkdown,
     handleExportPdf,
+    handleOpenFindReplace,
     handleGenerateOutline,
     handleRunStage
   ]);
@@ -957,6 +1118,25 @@ export const App: React.FC = () => {
         <CommandPalette
           actions={commandPaletteActions}
           onClose={() => setShowCommandPalette(false)}
+        />
+      ) : null}
+      {showFindReplace ? (
+        <FindReplaceModal
+          query={findQuery}
+          replacement={replaceQuery}
+          options={findOptions}
+          totalMatches={findMatchesInWorking.length}
+          activeMatchNumber={
+            findMatchesInWorking.length > 0 ? activeFindMatchIndex + 1 : 0
+          }
+          onChangeQuery={setFindQuery}
+          onChangeReplacement={setReplaceQuery}
+          onChangeOptions={setFindOptions}
+          onNext={jumpToNextFindMatch}
+          onPrevious={jumpToPreviousFindMatch}
+          onReplace={handleReplaceCurrentMatch}
+          onReplaceAll={handleReplaceAllMatches}
+          onClose={() => setShowFindReplace(false)}
         />
       ) : null}
       {showSearch ? (
@@ -991,6 +1171,9 @@ export const App: React.FC = () => {
             onClick={() => setShowCommandPalette(true)}
           >
             Commands
+          </button>
+          <button className="ghost" type="button" onClick={handleOpenFindReplace}>
+            Find/Replace
           </button>
           <button className="ghost" type="button" onClick={() => setShowSearch(true)}>
             Search
@@ -1414,6 +1597,7 @@ export const App: React.FC = () => {
               <p className="muted">Cmd/Ctrl + 1-4: run stages</p>
               <p className="muted">Cmd/Ctrl + S: commit edit</p>
               <p className="muted">Cmd/Ctrl + K: command palette</p>
+              <p className="muted">Cmd/Ctrl + H: find and replace</p>
               <p className="muted">Cmd/Ctrl + F: search</p>
               <p className="muted">Cmd/Ctrl + Shift + E: export JSON</p>
               <p className="muted">Cmd/Ctrl + Shift + H: export HTML</p>

@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useId, useRef } from "react";
 
 export type EditorApi = {
   jumpTo: (index: number) => void;
+  selectRange: (start: number, end: number) => void;
   focus: () => void;
   getCursor: () => number;
+  getSelection: () => { start: number; end: number };
 };
 
 export const Editor: React.FC<{
@@ -79,11 +81,31 @@ export const Editor: React.FC<{
       el.focus();
       el.selectionStart = next;
       el.selectionEnd = next;
-
-      // Scroll the target line into view. This keeps jumps usable even without
-      // typewriter mode.
       const lineHeight = readLineHeight(el);
       const before = el.value.slice(0, next);
+      const lineIndex = before.split("\n").length - 1;
+      const targetTop = Math.max(0, lineIndex * lineHeight - el.clientHeight / 3);
+      el.scrollTop = targetTop;
+      reportCursor();
+      scheduleCenter();
+    },
+    [readLineHeight, reportCursor, scheduleCenter]
+  );
+
+  const selectRange = useCallback(
+    (start: number, end: number) => {
+      const el = ref.current;
+      if (!el) return;
+
+      const nextStart = Math.max(0, Math.min(start, el.value.length));
+      const nextEnd = Math.max(nextStart, Math.min(end, el.value.length));
+
+      el.focus();
+      el.selectionStart = nextStart;
+      el.selectionEnd = nextEnd;
+
+      const lineHeight = readLineHeight(el);
+      const before = el.value.slice(0, nextStart);
       const lineIndex = before.split("\n").length - 1;
       const targetTop = Math.max(0, lineIndex * lineHeight - el.clientHeight / 3);
       el.scrollTop = targetTop;
@@ -98,16 +120,27 @@ export const Editor: React.FC<{
     if (!apiRef) return;
     apiRef.current = {
       jumpTo,
+      selectRange,
       focus: () => ref.current?.focus(),
       getCursor: () =>
         typeof ref.current?.selectionStart === "number"
           ? (ref.current?.selectionStart as number)
-          : 0
+          : 0,
+      getSelection: () => ({
+        start:
+          typeof ref.current?.selectionStart === "number"
+            ? (ref.current?.selectionStart as number)
+            : 0,
+        end:
+          typeof ref.current?.selectionEnd === "number"
+            ? (ref.current?.selectionEnd as number)
+            : 0
+      })
     };
     return () => {
       apiRef.current = null;
     };
-  }, [apiRef, jumpTo]);
+  }, [apiRef, jumpTo, selectRange]);
 
   return (
     <div className="editor">

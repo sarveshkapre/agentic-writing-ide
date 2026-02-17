@@ -15,6 +15,7 @@ export const ShortcutsModal: React.FC<{
       { keys: "Cmd/Ctrl + 1-4", description: "Run pipeline stages" },
       { keys: "Cmd/Ctrl + S", description: "Commit edit" },
       { keys: "Cmd/Ctrl + K", description: "Open command palette" },
+      { keys: "Cmd/Ctrl + H", description: "Find and replace" },
       { keys: "Cmd/Ctrl + F", description: "Search" },
       { keys: "Cmd/Ctrl + Shift + E", description: "Export JSON" },
       { keys: "Cmd/Ctrl + Shift + H", description: "Export HTML" },
